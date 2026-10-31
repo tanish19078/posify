@@ -1760,6 +1760,37 @@
         "title": "OrganizationCreate",
         "type": "object"
       },
+      "PDFImport": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/CatalogDocument"
+          },
+          "empty_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Empty Pages",
+            "type": "array"
+          },
+          "page_count": {
+            "title": "Page Count",
+            "type": "integer"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document",
+          "sha256",
+          "page_count",
+          "empty_pages"
+        ],
+        "title": "PDFImport",
+        "type": "object"
+      },
       "Procedure": {
         "additionalProperties": false,
         "properties": {
@@ -2082,6 +2113,18 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Number"
           },
           "procedure_id": {
             "anyOf": [
@@ -3018,6 +3061,52 @@
         "summary": "Assistant Query"
       }
     },
+    "/v1/catalog/documents/{document_id}/pdf": {
+      "get": {
+        "operationId": "original_v1_catalog_documents__document_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Original"
+      }
+    },
     "/v1/catalog/documents/{document_id}/publish": {
       "post": {
         "operationId": "publish_document_v1_catalog_documents__document_id__publish_post",
@@ -3324,6 +3413,97 @@
           }
         ],
         "summary": "Create Document"
+      }
+    },
+    "/v1/catalog/models/{model_id}/pdf": {
+      "post": {
+        "operationId": "import_pdf_v1_catalog_models__model_id__pdf_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "title",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Title",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_ref",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "title": "Source Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/pdf": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PDFImport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Pdf"
       }
     },
     "/v1/catalog/models/{model_id}/publish": {
@@ -3881,6 +4061,30 @@
           }
         ],
         "summary": "Me"
+      }
+    },
+    "/v1/operations": {
+      "get": {
+        "operationId": "operations_v1_operations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          },
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Operations"
       }
     },
     "/v1/organizations": {
