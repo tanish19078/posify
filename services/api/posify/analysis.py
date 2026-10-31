@@ -14,6 +14,20 @@ from posify.matching import extract_identifiers, match_identifiers
 from posify.ocr import OCRLine
 
 
+class ComponentHTTPError(HTTPException):
+    """Retain a bounded stage identifier without persisting exception details."""
+    def __init__(self, component, cause):
+        super().__init__(cause.status_code, detail=cause.detail)
+        self.component = component
+
+
+def run_component(component, operation, image_path):
+    try:
+        return operation(image_path)
+    except HTTPException as exc:
+        raise ComponentHTTPError(component, exc) from exc
+
+
 def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analysis_id=None):
     with database.connect() as db:
         capture = db.execute('SELECT * FROM captures WHERE id=? AND site_id=?', (str(capture_id), site_id)).fetchone()
@@ -25,7 +39,7 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
     detections, revision, warnings = [], None, []
     ocr = app.state.ocr
     if mode == 'detect_ocr':
-        detections, revision = app.state.detector.predict(image_path)
+        detections, revision = run_component('detector', app.state.detector.predict, image_path)
         regions = [d for d in detections if d.label.casefold() in {'nameplate', 'label'}] or detections
         if len(regions) > 8:
             warnings.append('ocr_limited_to_first_eight_regions')
@@ -38,15 +52,15 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
                     box = (math.floor(x1), math.floor(y1), math.ceil(x2), math.ceil(y2))
                     crop = Path(temp) / f'{index}.png'
                     image.crop(box).save(crop)
-                    for line in ocr.recognize(crop):
+                    for line in run_component('ocr', ocr.recognize, crop):
                         mapped = None if line.box is None else (line.box[0]+box[0], line.box[1]+box[1],
                                                                line.box[2]+box[0], line.box[3]+box[1])
                         lines.append(OCRLine(text=line.text, confidence=line.confidence, box=mapped))
         else:
             warnings.append('no_detections_full_image_ocr')
-            lines = ocr.recognize(image_path)
+            lines = run_component('ocr', ocr.recognize, image_path)
     elif mode == 'ocr':
-        lines = ocr.recognize(image_path)
+        lines = run_component('ocr', ocr.recognize, image_path)
     else:
         raise HTTPException(422, 'Unsupported analysis mode')
     if len(lines) > 2000:

@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException, Query
 from pydantic import Field
 
-from posify.analysis import compute_analysis, save_analysis
+from posify.analysis import ComponentHTTPError, compute_analysis, save_analysis
 from posify.catalog import record_event
 from posify.schemas import CaptureAnalysis, StrictModel
 
@@ -183,7 +183,8 @@ def work_once(app, lease_seconds=300):
         else:
             finish_job(app.state.database, claim, result=result)
     except HTTPException as exc:
-        finish_job(app.state.database, claim, error_code=f'component_http_{exc.status_code}',
+        component = exc.component if isinstance(exc, ComponentHTTPError) else 'component'
+        finish_job(app.state.database, claim, error_code=f'{component}_http_{exc.status_code}',
                    retryable=exc.status_code >= 500)
     except Exception:
         finish_job(app.state.database, claim, error_code='internal_analysis_error', retryable=True)
