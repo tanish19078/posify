@@ -1,0 +1,26 @@
+Industrial equipment identification — backend demo
+
+Photo: “Nameplate of a CT.jpg”, SAM31416, Wikimedia Commons.
+https://commons.wikimedia.org/wiki/File:Nameplate_of_a_CT.jpg
+License: CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/
+Changes: orientation normalization, aspect-preserving resize, crop, measured detector outline, presentation layout and animation.
+The resulting demo video visual adaptation is shared under CC BY-SA 4.0.
+
+Music: Sascha Ende, “Happy Beats / Business Moves vol-12”, ende.app.
+https://ende.app/en
+License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+Music source/license information: https://ende.app/en/standard-license
+Changes: 22-second excerpt, reduced gain and fades.
+
+Sound effects: Kenney — https://kenney.nl/ — CC0.
+Files: interface/click_003.ogg; impact/impactSoft_medium_001.ogg.
+
+Fonts: DejaVu fonts — https://dejavu-fonts.github.io/ — DejaVu/Bitstream Vera licenses.
+Animation workflow: Brag by latent-spaces (MIT), Hyperframes and GSAP.
+https://github.com/latent-spaces/brag
+https://hyperframes.heygen.com/
+
+Evidence note: this uses actual nameplate-v1 model output and raw Tesseract text.
+UI-like panels are a presentation view; the production web frontend is not built.
+72–75 ms is warm ONNX CPU execution from four smoke images, not end-to-end latency or an accuracy claim.
+Raw OCR did not establish a verified asset identifier. Human confirmation remains required.

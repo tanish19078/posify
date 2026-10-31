@@ -1,0 +1,2 @@
+A real nameplate photo through local detection and OCR—with identity confirmation kept human. Backend demo; web interface in progress.
+Visuals: SAM31416, Wikimedia Commons, CC BY-SA 4.0 (https://commons.wikimedia.org/wiki/File:Nameplate_of_a_CT.jpg); music: Sascha Ende, ende.app, CC BY 4.0.
