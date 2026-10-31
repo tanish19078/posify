@@ -41,7 +41,8 @@ same-class duplicates and returns at most 50 detections. Candidate preselection 
 bounded to 3000 score-ranked boxes. Thresholds are heuristics pending your evaluation.
 Category recognition does not establish a physical asset's identity.
 
-Verification here covers manifests, letterboxing, decoding, classwise NMS and
-crop/OCR coordinate mapping with controlled outputs. A trained ONNX artifact has
-not been provided; actual equipment accuracy, export conformance and inference
-latency must be validated against your reference examples before enabling it.
+The provided nameplate v1 artifact has now passed actual ONNX Runtime reference
+conformance and public-image detection/OCR smoke checks. See
+[trained detector setup and results](TRAINED_DETECTOR.md) for reproducible provisioning,
+the pinned runtime, limits and observed failure cases. Field accuracy and OCR
+identifier reliability remain separate evaluation tasks.

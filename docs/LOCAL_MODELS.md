@@ -13,7 +13,7 @@ or language model, and never treats a missing component as a successful inferenc
 | PaddleOCR adapter | Yes, optional | Contract integration only; weights/runtime not installed |
 | E5 hybrid retrieval adapter | Yes, optional | Prefixes, fusion and failure handling with a controlled encoder |
 | Ollama drafts | Yes, optional | Simulated runtime responses; no LLM weights installed |
-| Equipment detector inference adapter | Yes, optional | Contract/preprocessing/decoding tests; no trained artifact supplied |
+| Equipment detector inference adapter | Yes, optional | Actual nameplate v1 reference conformance and four public-image smoke cases |
 | QR decoding | No | OCR reads explicit printed labels only |
 | Mobile/3D | No | No on-phone inference claims |
 
@@ -90,3 +90,5 @@ See the [detector contract](DETECTOR_CONTRACT.md) for the exact supported raw YO
 - https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/OCR.html
 - https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
 - https://huggingface.co/intfloat/multilingual-e5-small
+
+For the provided trained export and pinned CPU runtime, see [integration results](TRAINED_DETECTOR.md).
