@@ -10,13 +10,19 @@ def test_upgrade_legacy_preserves_data_and_registers_factory(tmp_path):
         connection.executescript(SCHEMA)
         connection.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)',
                            ('asset-legacy', 'legacy-plant', 'P-1', 'Maker', 'M1', 'S1', 'pump', 'Bay 1'))
+        connection.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
+                           ('legacy-plant', 'asset.created', 'asset-legacy', 'before-migration', '{}'))
     db = Database(path)
     with db.connect() as connection:
         assert connection.execute('SELECT tag FROM assets WHERE id=?', ('asset-legacy',)).fetchone()['tag'] == 'P-1'
         factory = connection.execute('SELECT * FROM factories WHERE id=?', ('legacy-plant',)).fetchone()
         assert connection.execute('SELECT revision FROM assets').fetchone()['revision'] == 1
         assert factory['organization_id'] == '00000000-0000-0000-0000-000000000001'
-        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0005'
+        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0007'
+        legacy_event = connection.execute('SELECT * FROM audit').fetchone()
+        assert legacy_event['actor_type'] == 'legacy' and legacy_event['actor_id'] is None
+        assert legacy_event['entity_id'] == 'asset-legacy'
+        assert connection.execute('SELECT * FROM users').fetchall() == []
     db.upgrade()
     with db.connect() as connection:
         assert len(connection.execute('SELECT * FROM factories').fetchall()) == 1

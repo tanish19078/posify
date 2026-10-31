@@ -96,3 +96,41 @@ def test_no_detections_has_explicit_whole_image_ocr_fallback(client):
     result = client.get(f"/v1/sites/plant-a/jobs/{job['id']}").json()['result']
     assert result['status'] == 'insufficient_evidence'
     assert result['pipeline_warnings'] == ['no_detections_full_image_ocr']
+
+
+def test_cancellation_invalidates_running_claim_and_is_replay_safe(client):
+    capture = upload(client).json()['capture']
+    job = enqueue(client, capture).json()
+    claim = claim_job(client.app.state.database)
+    route = f"/v1/sites/plant-a/jobs/{job['id']}/cancel"
+    cancelled = client.post(route)
+    assert cancelled.status_code == 200
+    assert cancelled.json()['status'] == 'failed'
+    assert cancelled.json()['error_code'] == 'cancelled_by_user'
+    assert client.post(route).json() == cancelled.json()
+    assert not finish_job(client.app.state.database, claim, error_code='late-worker')
+    assert not work_once(client.app)
+    assert client.get(f"/v1/sites/plant-a/captures/{capture['id']}/analyses").json() == []
+    assert len(client.get('/v1/sites/plant-a/audit?kind=analysis_job.cancelled').json()) == 1
+    assert client.post(route.replace('plant-a', 'plant-b')).status_code == 404
+
+
+def test_queue_limit_replays_and_capacity_recovery(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    from posify.app import create_app
+    from test_api import register_factory
+    monkeypatch.setenv('POSIFY_QUEUE_LIMIT', '1')
+    with TestClient(create_app(str(tmp_path / 'queue.db'), 'test-key')) as c:
+        c.headers['X-API-Key'] = 'test-key'
+        register_factory(c, 'plant-a')
+        capture = upload(c).json()['capture']
+        job_id = str(uuid4())
+        job = enqueue(c, capture, id=job_id)
+        assert job.status_code == 202
+        assert enqueue(c, capture, id=job_id).status_code == 202
+        rejected = enqueue(c, capture)
+        assert rejected.status_code == 429
+        assert rejected.headers['retry-after'] == '2'
+        assert c.post(f"/v1/sites/plant-a/jobs/{job_id}/cancel").status_code == 200
+        assert enqueue(c, capture).status_code == 202
+    c.app.state.database.engine.dispose()
