@@ -23,3 +23,6 @@ credentials/
 
 # Snapshots contain private registry records and credential digests.
 backups/
+
+# Brag renders, licensed media copies and local preview caches.
+/brag-output*/

@@ -13,6 +13,10 @@ worker are implemented. The web client is pending. Detector training runs separa
 in Colab. The supplied nameplate ONNX export has passed local reference and public-image
 integration checks; weights stay outside Git. See [trained detector setup](docs/TRAINED_DETECTOR.md).
 
+A [22-second evidence demo](demos/nameplate-video/README.md) uses Brag and Hyperframes
+to present actual detector/OCR output. Its source is reproducible; the panels are
+a presentation view of the backend workflow.
+
 ## Architecture
 
 The service is a modular Python backend with a separate inference worker. HTTP
