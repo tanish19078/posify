@@ -16,8 +16,9 @@ npm run dev
 ```
 
 Open the printed Vite URL. The initial workspace is a clearly labelled,
-read-only demo. Registry records are fictional; the image, detector region and
-displayed raw OCR excerpt come from the documented public-image smoke run.
+read-only demo. Registry records are fictional; the motor image and structured evidence come from the recorded local PP-OCRv6
+recognition smoke run. Model catalogue references are photo transcriptions, with
+an explicitly synthetic near-code distractor. They are not manufacturer verification.
 Photo attribution is in [public/images/CREDITS.md](public/images/CREDITS.md).
 No model runs in the browser and demo mode never pretends to analyze an upload.
 
@@ -32,7 +33,7 @@ Factories are discovered through the authenticated membership-scoped endpoint.
 ## Workflows
 
 - **Captures:** raw PNG/JPEG uploads, bounded history, image zoom/crop, measured
-  detection overlays, raw OCR, durable worker jobs, cancellation and explicit
+  detection overlays, structured source-linked fields, catalogue agreement checks, raw OCR, durable worker jobs, cancellation and explicit
   human confirmation. A score never establishes asset identity.
 - **Factory assets:** filter and register physical assets, inspect records,
   update location/category with revision protection and reason, and confirm a
