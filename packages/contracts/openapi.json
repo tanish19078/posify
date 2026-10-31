@@ -209,6 +209,15 @@
             "title": "Requires Review",
             "type": "boolean"
           },
+          "retrieval_method": {
+            "default": "lexical",
+            "enum": [
+              "lexical",
+              "hybrid_e5"
+            ],
+            "title": "Retrieval Method",
+            "type": "string"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/SourceExcerpt"
@@ -227,6 +236,205 @@
         "title": "AssistantResponse",
         "type": "object"
       },
+      "Capture": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "site_id": {
+            "title": "Site Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "sha256",
+          "width",
+          "height",
+          "warnings",
+          "created_at"
+        ],
+        "title": "Capture",
+        "type": "object"
+      },
+      "CaptureAnalysis": {
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "capture_id": {
+            "format": "uuid",
+            "title": "Capture Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "engine": {
+            "title": "Engine",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/IdentifierEvidence"
+            },
+            "title": "Identifiers",
+            "type": "array"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/OCRLineResponse"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "requires_confirmation": {
+            "title": "Requires Confirmation",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "insufficient_evidence",
+              "ambiguous_identifiers",
+              "candidate_found",
+              "no_match"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "capture_id",
+          "created_at",
+          "engine",
+          "lines",
+          "identifiers",
+          "status",
+          "candidates",
+          "requires_confirmation"
+        ],
+        "title": "CaptureAnalysis",
+        "type": "object"
+      },
+      "CaptureAssignment": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "capture_id": {
+            "format": "uuid",
+            "title": "Capture Id",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture_id",
+          "asset_id",
+          "confirmed_at"
+        ],
+        "title": "CaptureAssignment",
+        "type": "object"
+      },
+      "CaptureConfirm": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_confirmed": {
+            "const": true,
+            "title": "Asset Confirmed",
+            "type": "boolean"
+          },
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "asset_confirmed"
+        ],
+        "title": "CaptureConfirm",
+        "type": "object"
+      },
+      "CaptureReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "capture": {
+            "$ref": "#/components/schemas/Capture"
+          },
+          "replayed": {
+            "title": "Replayed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "replayed",
+          "capture"
+        ],
+        "title": "CaptureReceipt",
+        "type": "object"
+      },
+      "EvidenceAttach": {
+        "additionalProperties": false,
+        "properties": {
+          "capture_id": {
+            "format": "uuid",
+            "title": "Capture Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "title": "EvidenceAttach",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -238,6 +446,39 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "IdentifierEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "tag",
+              "serial"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "line_index": {
+            "title": "Line Index",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "value",
+          "line_index",
+          "confidence"
+        ],
+        "title": "IdentifierEvidence",
         "type": "object"
       },
       "IdentifyRequest": {
@@ -421,6 +662,14 @@
             "title": "Asset Id",
             "type": "string"
           },
+          "capture_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Capture Ids",
+            "type": "array"
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -465,6 +714,74 @@
           "observations"
         ],
         "title": "InspectionDetail",
+        "type": "object"
+      },
+      "InspectionEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "capture_id": {
+            "format": "uuid",
+            "title": "Capture Id",
+            "type": "string"
+          },
+          "inspection_id": {
+            "format": "uuid",
+            "title": "Inspection Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "inspection_id",
+          "capture_id"
+        ],
+        "title": "InspectionEvidence",
+        "type": "object"
+      },
+      "OCRLineResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "confidence",
+          "box"
+        ],
+        "title": "OCRLineResponse",
         "type": "object"
       },
       "Observation": {
@@ -707,9 +1024,30 @@
             "title": "Assets",
             "type": "array"
           },
+          "capture_assignments": {
+            "items": {
+              "$ref": "#/components/schemas/CaptureAssignment"
+            },
+            "title": "Capture Assignments",
+            "type": "array"
+          },
+          "captures": {
+            "items": {
+              "$ref": "#/components/schemas/Capture"
+            },
+            "title": "Captures",
+            "type": "array"
+          },
           "generated_at": {
             "title": "Generated At",
             "type": "string"
+          },
+          "inspection_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/InspectionEvidence"
+            },
+            "title": "Inspection Evidence",
+            "type": "array"
           },
           "inspections": {
             "items": {
@@ -1349,6 +1687,27 @@
         "summary": "Create Procedure"
       }
     },
+    "/v1/runtime": {
+      "get": {
+        "operationId": "runtime_status_v1_runtime_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Runtime Status"
+      }
+    },
     "/v1/sites/{site_id}/audit": {
       "get": {
         "operationId": "history_v1_sites__site_id__audit_get",
@@ -1412,6 +1771,413 @@
           }
         ],
         "summary": "History"
+      }
+    },
+    "/v1/sites/{site_id}/captures": {
+      "post": {
+        "operationId": "upload_capture_v1_sites__site_id__captures_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureReceipt"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Upload Capture"
+      }
+    },
+    "/v1/sites/{site_id}/captures/{capture_id}": {
+      "get": {
+        "operationId": "capture_metadata_v1_sites__site_id__captures__capture_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capture"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Capture Metadata"
+      }
+    },
+    "/v1/sites/{site_id}/captures/{capture_id}/analyses": {
+      "get": {
+        "operationId": "analyses_v1_sites__site_id__captures__capture_id__analyses_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaptureAnalysis"
+                  },
+                  "title": "Response Analyses V1 Sites  Site Id  Captures  Capture Id  Analyses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Analyses"
+      }
+    },
+    "/v1/sites/{site_id}/captures/{capture_id}/analyze": {
+      "post": {
+        "operationId": "analyze_v1_sites__site_id__captures__capture_id__analyze_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureAnalysis"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Analyze"
+      }
+    },
+    "/v1/sites/{site_id}/captures/{capture_id}/confirm": {
+      "post": {
+        "operationId": "confirm_capture_v1_sites__site_id__captures__capture_id__confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaptureConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureAssignment"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Confirm Capture"
+      }
+    },
+    "/v1/sites/{site_id}/captures/{capture_id}/image": {
+      "get": {
+        "operationId": "capture_image_v1_sites__site_id__captures__capture_id__image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Capture Image"
+      }
+    },
+    "/v1/sites/{site_id}/inspections/{inspection_id}/evidence": {
+      "post": {
+        "operationId": "attach_evidence_v1_sites__site_id__inspections__inspection_id__evidence_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "inspection_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Inspection Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvidenceAttach"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InspectionEvidence"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Attach Evidence"
       }
     },
     "/v1/sites/{site_id}/pack": {
