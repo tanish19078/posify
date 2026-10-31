@@ -8,9 +8,9 @@ regions, text and identifier evidence; the backend proposes factory asset matche
 for human confirmation. Confirmed assets connect shared manufacturer/model knowledge
 to factory-specific procedures and inspection records.
 
-**Status:** backend development. The API, persistence, capture workflow and analysis
-worker are implemented. The web client is pending. Detector training runs separately
-in Colab. The supplied nameplate ONNX export has passed local reference and public-image
+**Status:** the API, persistence, analysis worker and Warm Workbench web client
+are implemented. The client covers capture review, factory assets, shared catalogue,
+knowledge and inspections. Detector training runs separately in Colab. The supplied nameplate ONNX export has passed local reference and public-image
 integration checks; weights stay outside Git. See [trained detector setup](docs/TRAINED_DETECTOR.md).
 
 A [22-second evidence demo](demos/nameplate-video/README.md) uses Brag and Hyperframes
@@ -20,13 +20,13 @@ a presentation view of the backend workflow.
 ## Architecture
 
 The service is a modular Python backend with a separate inference worker. HTTP
-contracts separate the future web client from storage, workflow rules and model
+contracts separate the web client from storage, workflow rules and model
 adapters. Model outputs enter the system as evidence; explicit API operations own
 asset confirmation and inspection state.
 
 ```mermaid
 flowchart TD
-    Web["Web client · planned"] --> API["FastAPI · workflow and contracts"]
+    Web["React web client · evidence and workflows"] --> API["FastAPI · workflow and contracts"]
     API --> DB["SQL database · registry, jobs and audit"]
     API --> Images["Capture storage · sanitized images"]
     Worker["Analysis worker · leased jobs"] <--> DB
@@ -39,6 +39,7 @@ flowchart TD
 
 | Layer | Technology | Responsibility |
 | --- | --- | --- |
+| Web client | React, TypeScript, Vite | Evidence review, factory registry, catalogue, knowledge and inspections |
 | API and contracts | Python 3.12+, FastAPI, Pydantic, OpenAPI | Validation, workflow rules and client integration |
 | Persistence | SQLAlchemy, Alembic; SQLite or PostgreSQL | Registry, immutable records, transactions and audit |
 | Image evidence | Pillow and filesystem storage | Bounded uploads, normalization and protected access |
@@ -115,6 +116,13 @@ provisioning API and request formats.
 - Site-pack version 2 is a consistent full JSON snapshot. It is not incremental
   synchronization and does not embed image bytes, OCR analyses or global documents.
 
+## Web client
+
+The [Warm Workbench client](apps/web/README.md) opens with a read-only demo and
+connects to the live API using an individual credential held in memory. Run
+`npm ci && npm run dev` in `apps/web`, alongside the API and worker below.
+Docker Compose serves the compiled client at `http://127.0.0.1:8080`.
+
 ## Run locally
 
 Use Python 3.12 or newer. The following commands use a POSIX shell:
@@ -159,8 +167,8 @@ mkdir -p models
 docker compose up --build
 ```
 
-Compose defines PostgreSQL 17, a one-shot migration service, the API and a separate
-worker. The API binds to loopback port 8000; captures and database use persistent
+Compose defines the web client, PostgreSQL 17, a one-shot migration service,
+the API and a separate worker. The API binds to loopback port 8000; captures and database use persistent
 volumes. The image includes Tesseract; optional ML runtimes and weights need separate
 provisioning. This Compose configuration has not been executed on the development
 host. See [database and deployment](docs/DATABASE.md) for operational details.
@@ -187,6 +195,7 @@ and [PDF import](docs/DOCUMENTS.md) for page-preserving draft ingestion.
 
 | Path | Contents |
 | --- | --- |
+| [apps/web/](apps/web/) | React workbench, API client, browser assets and frontend checks |
 | [services/api/posify/](services/api/posify/) | API, domain rules, persistence, inference adapters and worker |
 | [services/api/posify/migrations/](services/api/posify/migrations/) | Versioned Alembic schema changes |
 | [services/api/tests/](services/api/tests/) | Workflow, scope, replay, migration and adapter verification |
@@ -205,14 +214,17 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently covers 111 tests including an operator-provisioned artifact reference check; PostgreSQL validation runs in CI. This does not establish industrial detection
+currently passes 113 tests with one optional artifact check skipped; the supplied
+artifact was validated separately. Frontend checks cover API transport, stale
+factory responses and explicit confirmation, alongside a TypeScript production
+build. PostgreSQL validation runs in CI. This does not establish industrial detection
 accuracy, latency or production readiness. Optional model extras are outside the
 core dependency lock and require their own environment validation.
 
 PDF draft imports with page citations, persistent passage caching, individual access,
 supervisor review, reviewed link corrections, queue capacity
 limits, bounded lease renewal, cancellation and integrity-checked backup/restore
-are implemented. Remaining work includes the web client,
+are implemented. Remaining work includes deeper client pagination, provisioning/correction screens,
 SSO, physical identity-field corrections, large-collection vector indexing,
 broader model evaluation, storage retention policy, external monitoring and deployment-specific SSO integration. QR decoding, 3D reconstruction and work-order
 integrations are outside the current implementation.

@@ -1,4 +1,11 @@
 services:
+  web:
+    build: ./apps/web
+    ports:
+      - 127.0.0.1:8080:80
+    depends_on:
+      api:
+        condition: service_healthy
   db:
     image: postgres:17
     environment:

@@ -26,3 +26,8 @@ backups/
 
 # Brag renders, licensed media copies and local preview caches.
 /brag-output*/
+
+node_modules/
+*.tsbuildinfo
+coverage/
+.openai/
