@@ -1,0 +1,12 @@
+{
+  "split": "development_smoke_only",
+  "training_overlap": "unknown",
+  "annotation_provenance": "Manual transcription of the visible motor plate, not manufacturer verification. This single example is not a held-out benchmark.",
+  "catalogue": [
+    {"manufacturer":"SIEMENS","model":"1HU3054-0AC01-Z","variant":"base","category":"Permanent-magnet DC motor","source_ref":"Photo transcription: Oliver Wallscheid, CC BY 4.0; demo reference only"},
+    {"manufacturer":"SIEMENS","model":"1HU3054-0AC02-Z","variant":"base","category":"Synthetic distractor","source_ref":"Synthetic near-code distractor for evaluation; not an asserted real model"}
+  ],
+  "cases": [
+    {"id":"siemens-cutaway-motor","image":"../apps/web/public/images/machine.jpg","expected_fields":{"manufacturer":"SIEMENS","model":"1HU3054-0AC01-Z"}}
+  ]
+}
