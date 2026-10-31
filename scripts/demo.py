@@ -17,6 +17,9 @@ def main():
             r.raise_for_status()
             return r.json()
 
+        owner = request('POST', '/v1/organizations', json={'name': 'Synthetic demo owner'})
+        request('POST', '/v1/factories', json={'id': site, 'organization_id': owner['id'], 'name': site})
+
         a = request('POST', '/v1/assets', json=dict(site_id=site, tag='P-104',
                     manufacturer='Fictional Training Equipment', model='DEMO-1', serial='TRAINING-001',
                     category='pump', location='Simulated training bay'))

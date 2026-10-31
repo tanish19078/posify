@@ -28,6 +28,9 @@ def main():
         runtime = call('GET', '/v1/runtime')
         if not runtime['ocr']['configured']:
             raise SystemExit('Enable a local OCR engine on the server before running this walkthrough')
+        owner = call('POST', '/v1/organizations', json={'name': 'Synthetic capture demo owner'})
+        call('POST', '/v1/factories', json={'id': site, 'organization_id': owner['id'], 'name': site})
+
         asset = call('POST', '/v1/assets', json=dict(site_id=site, tag='P-104',
                      manufacturer='Fictional Training Equipment', model='DEMO-1', serial='S-001',
                      category='pump', location='Simulated inspection bay'))
