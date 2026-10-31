@@ -108,6 +108,8 @@ class Inspection(StrictModel):
     procedure_id: UUID
     status: Literal['open', 'submitted']
     created_at: str
+    created_by: UUID | None = None
+    submitted_by: UUID | None = None
 
 
 class Observation(StrictModel):

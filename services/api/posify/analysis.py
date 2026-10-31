@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from PIL import Image
 
+from posify.audit import record_event
 from posify.matching import extract_identifiers, match_identifiers
 from posify.ocr import OCRLine
 
@@ -63,7 +64,6 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
 def save_analysis(db, site_id, result):
     db.execute('INSERT INTO capture_analyses VALUES(?,?,?,?)',
                (result['id'], result['capture_id'], result['created_at'], json.dumps(result)))
-    db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-               (site_id, 'capture.analyzed', result['id'], result['created_at'],
-                json.dumps({'capture_id': result['capture_id'], 'engine': result['engine'],
-                            'status': result['status'], 'inference_mode': result['inference_mode']})))
+    record_event(db, site_id, 'capture.analyzed', result['id'],
+                 {'capture_id': result['capture_id'], 'engine': result['engine'],
+                  'status': result['status'], 'inference_mode': result['inference_mode']})

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
 from posify.catalog import require_factory
+from posify.audit import record_event
 from posify.analysis import compute_analysis, save_analysis
 from posify.captures import MAX_UPLOAD, capture_row, persist_image, sanitize_image
 from posify.matching import extract_identifiers, match_identifiers
@@ -37,8 +38,7 @@ def install_capture_routes(app, database, auth, root):
                         height=height, warnings=flags, created_at=datetime.now(timezone.utc).isoformat())
             db.execute('INSERT INTO captures VALUES(:id,:site_id,:sha256,:width,:height,:warnings,:created_at)',
                        {**data, 'warnings': json.dumps(flags)})
-            db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-                       (site_id, 'capture.created', data['id'], data['created_at'], json.dumps({'sha256': digest})))
+            record_event(db, site_id, 'capture.created', data['id'], {'sha256': digest})
         return {'replayed': False, 'capture': data}
 
     @app.post('/v1/sites/{site_id}/captures', response_model=CaptureReceipt, dependencies=auth,
@@ -107,9 +107,8 @@ def install_capture_routes(app, database, auth, root):
             data = dict(capture_id=str(capture_id), asset_id=str(body.asset_id),
                         confirmed_at=datetime.now(timezone.utc).isoformat())
             db.execute('INSERT INTO capture_assignments VALUES(:capture_id,:asset_id,:confirmed_at)', data)
-            db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-                       (site_id, 'capture.confirmed', str(capture_id), data['confirmed_at'],
-                        json.dumps({'asset_id': str(body.asset_id), 'basis': 'human_confirmation'})))
+            record_event(db, site_id, 'capture.confirmed', str(capture_id),
+                         {'asset_id': str(body.asset_id), 'basis': 'human_confirmation'})
         return data
 
     @app.post('/v1/sites/{site_id}/inspections/{inspection_id}/evidence', response_model=InspectionEvidence, dependencies=auth)
@@ -133,7 +132,5 @@ def install_capture_routes(app, database, auth, root):
             if not assigned or assigned['asset_id'] != current['asset_id']:
                 raise HTTPException(409, 'Confirm this capture for the inspection asset before attaching it')
             db.execute('INSERT INTO inspection_evidence VALUES(:inspection_id,:capture_id)', data)
-            db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-                       (site_id, 'inspection.evidence_attached', str(inspection_id),
-                        datetime.now(timezone.utc).isoformat(), json.dumps(data)))
+            record_event(db, site_id, 'inspection.evidence_attached', str(inspection_id), data)
         return data

@@ -9,6 +9,7 @@ from pydantic import Field
 from sqlalchemy.exc import IntegrityError
 
 from posify.schemas import StrictModel, Text
+from posify.audit import record_event
 
 
 class OrganizationCreate(StrictModel):
@@ -85,11 +86,6 @@ def model_record(db, model_id):
     if not row:
         raise HTTPException(404, 'Catalogue model not found')
     return dict(row)
-
-
-def record_event(db, site, kind, entity_id, payload):
-    db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-               (site, kind, entity_id, timestamp(), json.dumps(payload)))
 
 
 def install_catalog_routes(app, database, auth):

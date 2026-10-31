@@ -1,16 +1,18 @@
 import json
 import os
-import secrets
 from sqlalchemy.exc import IntegrityError
 from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query
-from fastapi.security import APIKeyHeader
 
 from posify.assistant import explain
 from posify.database import Database
+from posify.audit import actor, record_event as audit
+from posify.security import authorization, install_security_routes
+from posify.reviews import install_review_routes
+from posify.corrections import install_correction_routes
 from posify.capture_routes import install_capture_routes
 from posify.captures import capture_row
 from posify.ocr import LocalOCR
@@ -37,11 +39,6 @@ def decode(row):
     return result
 
 
-def audit(db, site, kind, entity, payload):
-    db.execute("INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)",
-               (site, kind, entity, now(), json.dumps(payload)))
-
-
 def asset(db, asset_id, site):
     row = db.execute("SELECT * FROM assets WHERE id=? AND site_id=?", (str(asset_id), site)).fetchone()
     if not row:
@@ -59,19 +56,20 @@ def inspection(db, inspection_id, site):
 
 def create_app(db_path=None, api_token=None, database_url=None):
     token = api_token or os.getenv("POSIFY_API_TOKEN")
-    if not token or token == "replace-with-a-generated-token":
+    mode = os.getenv("POSIFY_AUTH_MODE", "development")
+    if mode not in {"development", "users"}:
+        raise RuntimeError("POSIFY_AUTH_MODE must be development or users")
+    if mode == "development" and (not token or token == "replace-with-a-generated-token"):
         raise RuntimeError("Set POSIFY_API_TOKEN to a generated development token")
     database = Database(db_path or os.getenv("POSIFY_DB", "var/posify.db"),
                         url=database_url or (os.getenv("POSIFY_DATABASE_URL") if db_path is None else None))
     app = FastAPI(title="Equipment inspection API", version="0.1.0")
     app.state.database = database
-    header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-    def authorize(key: str | None = Depends(header)):
-        if not key or not secrets.compare_digest(key.encode(), token.encode()):
-            raise HTTPException(401, "Invalid API key")
-
+    authorize = authorization(database, token, mode)
     auth = [Depends(authorize)]
+    install_security_routes(app, database, auth)
+    install_review_routes(app, database, auth)
+    install_correction_routes(app, database, auth)
     install_catalog_routes(app, database, auth)
     install_job_routes(app, database, auth)
     app.state.ocr = LocalOCR()
@@ -119,6 +117,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
                           "model": app.state.model_name or None, "inference_verified": False},
             "detector": app.state.detector.readiness(),
             "database": {"dialect": database.dialect},
+            "authentication": {"mode": mode, "bootstrap_enabled": mode == "development"},
         }
 
     @app.get("/health")
@@ -217,8 +216,8 @@ def create_app(db_path=None, api_token=None, database_url=None):
             if (a["manufacturer"], a["model"]) != (p["manufacturer"], p["model"]):
                 raise HTTPException(409, "Procedure does not apply to this equipment model")
             data = {"id": str(uuid4()), "asset_id": a["id"], "procedure_id": p["id"],
-                    "status": "open", "created_at": now()}
-            db.execute("INSERT INTO inspections VALUES(:id,:asset_id,:procedure_id,:status,:created_at)", data)
+                    "status": "open", "created_at": now(), "created_by": actor.get()["id"], "submitted_by": None}
+            db.execute("INSERT INTO inspections (id,asset_id,procedure_id,status,created_at,created_by,submitted_by) VALUES(:id,:asset_id,:procedure_id,:status,:created_at,:created_by,:submitted_by)", data)
             audit(db, body.site_id, "inspection.created", data["id"], {"procedure_id": p["id"]})
         return data
 
@@ -269,7 +268,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
                 "SELECT step_id FROM observations WHERE inspection_id=?", (inspection_id,))}
             if expected != actual:
                 raise HTTPException(409, {"message": "Record every step before submission", "missing": sorted(expected - actual)})
-            db.execute("UPDATE inspections SET status='submitted' WHERE id=?", (inspection_id,))
+            db.execute("UPDATE inspections SET status='submitted',submitted_by=? WHERE id=?", (actor.get()["id"], inspection_id))
             audit(db, site_id, "inspection.submitted", inspection_id, {})
         return {"status": "submitted", "replayed": False}
 

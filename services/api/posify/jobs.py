@@ -1,5 +1,6 @@
 """Database-backed queue. Claims and result publication are short transactions."""
 import json
+import os
 import time
 from datetime import datetime, timezone
 from typing import Literal
@@ -45,6 +46,9 @@ def public_job(row):
 
 
 def install_job_routes(app, database, auth):
+    queue_limit = int(os.getenv('POSIFY_QUEUE_LIMIT', '100'))
+    if not 1 <= queue_limit <= 10000:
+        raise RuntimeError('POSIFY_QUEUE_LIMIT must be between 1 and 10000')
     @app.post('/v1/sites/{site_id}/captures/{capture_id}/jobs', response_model=AnalysisJob,
               dependencies=auth, status_code=202)
     def enqueue(site_id: str, capture_id: UUID, body: JobCreate):
@@ -57,6 +61,9 @@ def install_job_routes(app, database, auth):
                 if (previous['site_id'], previous['capture_id'], previous['mode']) != (site_id, str(capture_id), body.mode):
                     raise HTTPException(409, 'Job ID already used for another request')
                 return public_job(previous)
+            pending = db.execute("SELECT COUNT(*) AS count FROM analysis_jobs WHERE site_id=? AND status IN ('queued','running')", (site_id,)).fetchone()['count']
+            if pending >= queue_limit:
+                raise HTTPException(429, 'Factory analysis queue is full', headers={'Retry-After': '2'})
             now = timestamp()
             data = dict(id=str(body.id), site_id=site_id, capture_id=str(capture_id), mode=body.mode,
                         status='queued', attempts=0, max_attempts=3, available_at=time.time(), lease_until=None,
@@ -65,6 +72,23 @@ def install_job_routes(app, database, auth):
                        ':available_at,:lease_until,:claim_token,:result,:error_code,:created_at,:updated_at)', data)
             record_event(db, site_id, 'analysis_job.queued', data['id'], {'capture_id': str(capture_id), 'mode': body.mode})
         return public_job(data)
+
+    @app.post('/v1/sites/{site_id}/jobs/{job_id}/cancel', response_model=AnalysisJob, dependencies=auth)
+    def cancel(site_id: str, job_id: UUID):
+        with database.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute('SELECT * FROM analysis_jobs WHERE id=? AND site_id=?', (str(job_id), site_id)).fetchone()
+            if not row:
+                raise HTTPException(404, 'Job not found in this factory')
+            if row['status'] in {'succeeded', 'failed'}:
+                if row['error_code'] == 'cancelled_by_user':
+                    return public_job(row)
+                raise HTTPException(409, 'Completed jobs cannot be cancelled')
+            db.execute("UPDATE analysis_jobs SET status='failed',error_code='cancelled_by_user',lease_until=NULL,claim_token=NULL,updated_at=? WHERE id=?",
+                       (timestamp(), str(job_id)))
+            record_event(db, site_id, 'analysis_job.cancelled', str(job_id), {})
+            result = db.execute('SELECT * FROM analysis_jobs WHERE id=?', (str(job_id),)).fetchone()
+        return public_job(result)
 
     @app.get('/v1/sites/{site_id}/jobs/{job_id}', response_model=AnalysisJob, dependencies=auth)
     def get_job(site_id: str, job_id: UUID):
