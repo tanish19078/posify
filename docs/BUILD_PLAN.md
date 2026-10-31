@@ -20,13 +20,16 @@ IDs and explicit draft status. Never let generated text mutate inspection state.
 A generated answer is not mechanically verified merely because its citation IDs
 are valid. Evaluate groundedness with technician-reviewed cases.
 
-## 3. Perception integration (next)
-Planned files: `services/perception/{capture,ocr,detector,matcher}.py`,
-`datasets/README.md`, `evals/identification_cases.jsonl`.
+## 3. Perception integration (partially implemented)
+Implemented: `services/api/posify/{captures,capture_routes,ocr,matching,retrieval}.py`,
+`services/api/tests/{test_captures,test_retrieval}.py`, `docs/{CAPTURE_API,LOCAL_MODELS}.md`.
 
-Capture quality, OCR/QR parsing, equipment categories, multi-view evidence,
-unknown-device rejection and a labelled evaluation set. Current API accepts
-observed identifiers; it does not run OCR or object detection.
+Image storage, basic quality flags, optional OCR and E5 adapters, conservative
+identifier matching, human confirmation and inspection evidence are implemented.
+Object detection, QR decoding and multi-view recognition remain unimplemented.
+Training/dataset building will be performed separately in Colab; no training
+scripts or notebooks belong in this implementation. The external artifact handoff
+requirements are documented in `docs/LOCAL_MODELS.md`.
 
 ## 4. Mobile field client (next)
 Planned files: `apps/android/` with capture, asset review, inspection, local
