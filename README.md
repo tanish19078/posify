@@ -214,7 +214,7 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently passes 113 tests with one optional artifact check skipped; the supplied
+currently passes 115 tests with one optional artifact check skipped; the supplied
 artifact was validated separately. Frontend checks cover API transport, stale
 factory responses and explicit confirmation, alongside a TypeScript production
 build. PostgreSQL validation runs in CI. This does not establish industrial detection
