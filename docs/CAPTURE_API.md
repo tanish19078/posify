@@ -3,6 +3,8 @@
 All calls require `X-API-Key`. Shared-token development access is instance-wide;
 site filters are not a substitute for per-user site authorization.
 
+Register an organization/factory before uploading. See `docs/DATABASE.md`.
+
 ## Upload
 
 ```bash
@@ -73,3 +75,5 @@ Run `python scripts/capture_demo.py` against the local API, configured with
 `POSIFY_OCR_ENGINE=tesseract`. This creates explicitly synthetic nameplate data,
 verifies real OCR, confirms identity, attaches evidence and submits an inspection.
 It does not train or evaluate an industrial detector.
+
+For background OCR/detector execution, use the job endpoints in ANALYSIS_JOBS.md. Synchronous analysis remains OCR-only.

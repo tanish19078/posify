@@ -1,60 +1,36 @@
-# Build plan
+# Backend-first build plan
 
-The repository name is retained; no product branding is selected.
+The product remains unnamed. Web is the first client; frontend is intentionally deferred.
+Training and dataset building remain separate Colab work.
 
-## 1. Backend foundation (this implementation)
-Files: `pyproject.toml`, `services/api/posify/{database,schemas,app}.py`,
-`services/api/tests/test_api.py`, `packages/contracts/openapi.json`.
+## Implemented backend
 
-Deliver a persistent asset registry, conservative identifier matching, immutable
-procedure versions, validated inspection lifecycle, replay-safe observation sync,
-site-pack export and audit events. Use SQLite for a single-instance local service;
-PostgreSQL and migrations are required before multi-instance deployment.
+- SQLAlchemy connections and Alembic revisions: `database.py`, `migrations/`.
+- Organizations, factories, global models/manual revisions and confirmed asset links: `catalog.py`.
+- Local assets, immutable procedures, inspection observations, submission and audit: `app.py`.
+- Image validation/storage, OCR, identifier evidence and confirmed attachments: `captures.py`, `capture_routes.py`, `ocr.py`, `matching.py`.
+- Source-labelled factory/global retrieval and optional local E5/Ollama: `assistant.py`, `retrieval.py`.
+- Inference-only YOLO11 ONNX input/output contract: `detector.py`.
+- Cropped OCR orchestration and original-image coordinates: `analysis.py`.
+- Durable leased jobs, retries and fencing: `jobs.py`, `worker.py`.
+- Generated OpenAPI, smoke scripts, SQLite/PostgreSQL CI and proposed Docker Compose stack.
 
-## 2. Local knowledge and model boundary (this implementation)
-Files: `services/api/posify/assistant.py`, `scripts/demo.py`.
+## Next backend work
 
-Retrieve applicable procedure excerpts; provide extractive results without a
-model, or a bounded draft using a locally configured Ollama model. Return source
-IDs and explicit draft status. Never let generated text mutate inspection state.
-A generated answer is not mechanically verified merely because its citation IDs
-are valid. Evaluate groundedness with technician-reviewed cases.
+Individual identities and site/role authorization; editable asset lifecycle with
+reviewed corrections; actual Paddle/E5/Ollama provisioning and evaluation; detector
+artifact conformance; PDF ingestion and per-page citations; persistent vector index;
+supervisor review/work orders; evidence retention and backup/restore verification.
+Catalogue knowledge is not yet included in site-pack snapshots. Organization data
+relationships do not constitute tenant security.
 
-## 3. Perception integration (partially implemented)
-Implemented: `services/api/posify/{captures,capture_routes,ocr,matching,retrieval}.py`,
-`services/api/tests/{test_captures,test_retrieval}.py`, `docs/{CAPTURE_API,LOCAL_MODELS}.md`.
+## Deferred clients
 
-Image storage, basic quality flags, optional OCR and E5 adapters, conservative
-identifier matching, human confirmation and inspection evidence are implemented.
-Object detection, QR decoding and multi-view recognition remain unimplemented.
-Training/dataset building will be performed separately in Colab; no training
-scripts or notebooks belong in this implementation. The external artifact handoff
-requirements are documented in `docs/LOCAL_MODELS.md`.
+A web capture/review/inspection interface and management console will use OpenAPI.
+No Android client is planned for this build. Browser offline caching can be evaluated
+later; running inference on a factory server does not mean inference runs in a browser.
 
-## 4. Mobile field client (next)
-Planned files: `apps/android/` with capture, asset review, inspection, local
-storage and sync packages. Generate the client from OpenAPI. Load site packs
-locally, retain observations in an outbox, show unsynchronized records, and
-benchmark a mobile model before choosing its runtime. Desktop-local inference
-is not on-phone inference.
+## Optional spatial work
 
-## 5. Management and operational integration (next)
-Planned files: `apps/console/`, `services/api/posify/{identity,evidence,integrations}.py`,
-`infra/`, `evals/`.
-
-Add OIDC roles and site-scoped authorization, signed/checksummed site packs,
-evidence uploads, document ingestion/review, PostgreSQL migrations, backups,
-telemetry, work-order connectors and model distribution. The initial shared-token
-API is for local development, not tenant isolation or production access control.
-
-## 6. Spatial enhancements (optional)
-Planned files: `apps/android/.../spatial/`, `packages/spatial-contracts/`.
-
-Depth/AR overlays and links to existing CAD/BIM models, with device capability
-checks. No engineering measurements or hidden-fault diagnosis from RGB alone.
-
-## Acceptance walkthrough
-Create asset and immutable procedure; request an identifier match; confirm the
-asset; create inspection against that exact procedure version; append/replay
-observations; submit only after every step has an explicit result; export the
-site pack and audit history. Repeat after a service restart.
+Existing CAD links or browser overlays only after core field workflows work. No 3D
+reconstruction or hidden-fault diagnosis is promised.

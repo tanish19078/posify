@@ -1,7 +1,9 @@
 # Architecture decisions
 
-- Modular monolith: one FastAPI service, SQLite, explicit HTTP contracts. Avoid
-  premature distributed transactions and infrastructure dependencies.
+- Modular backend: FastAPI API plus a separate SQL-backed analysis worker, explicit
+  HTTP contracts, SQLite for local use and PostgreSQL for deployment. Alembic owns schema upgrades.
+- Global model/manual knowledge is distinct from installed assets and private factory
+  maintenance records. Links and publication require explicit confirmation.
 - Asset identity is site + tag, with optional site-unique serial. Visual category
   never establishes exact identity. Identifier matches always require confirmation.
 - Procedures are immutable and scoped to site, manufacturer and model. Each
@@ -20,3 +22,5 @@
 - No CORS wildcard, arbitrary URL fetch, document upload, shell tools or machine control.
 - Local HTTP inference is optional; the runtime URL is trusted operator configuration.
   The application does not fetch model names, credentials or endpoints from user text.
+
+- Database write claims are serialized; inference runs outside transactions. Job results require an unexpired fencing token. See DATABASE.md and ANALYSIS_JOBS.md.

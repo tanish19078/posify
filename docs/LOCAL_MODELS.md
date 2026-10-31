@@ -13,7 +13,7 @@ or language model, and never treats a missing component as a successful inferenc
 | PaddleOCR adapter | Yes, optional | Contract integration only; weights/runtime not installed |
 | E5 hybrid retrieval adapter | Yes, optional | Prefixes, fusion and failure handling with a controlled encoder |
 | Ollama drafts | Yes, optional | Simulated runtime responses; no LLM weights installed |
-| Equipment detector inference | No | Awaiting the external model artifact and inference adapter |
+| Equipment detector inference adapter | Yes, optional | Contract/preprocessing/decoding tests; no trained artifact supplied |
 | QR decoding | No | OCR reads explicit printed labels only |
 | Mobile/3D | No | No on-phone inference claims |
 
@@ -64,7 +64,7 @@ candidate) and restart to enable draft generation. Offline artifact provisioning
 is an operator action. The API never downloads language-model weights. Model text
 cannot confirm an asset, attach evidence or submit an inspection.
 
-## Colab detector handoff (future inference integration)
+## Colab detector handoff
 
 When the separately trained detector is ready, provide:
 
@@ -77,9 +77,9 @@ When the separately trained detector is ready, provide:
 - Held-out evaluation results, failure cases and target hardware latency.
 
 YOLO export variants have different output layouts. Do not guess decoding from a
-filename or treat arbitrary ONNX files as trusted. A future adapter should validate
-the manifest, verify the digest and reproduce the reference outputs before being
-enabled. Detection locates a category; it never establishes an installed asset ID.
+filename or treat arbitrary ONNX files as trusted. The implemented adapter validates
+the manifest and digest. Reproduce your reference outputs before enabling it.
+See `docs/DETECTOR_CONTRACT.md` for the exact supported raw YOLO11 layout. Detection locates a category; it never establishes an installed asset ID.
 
 ## Sources
 
