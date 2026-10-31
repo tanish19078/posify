@@ -2,14 +2,20 @@ import json
 import os
 import secrets
 import sqlite3
+from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.security import APIKeyHeader
 
-from posify.assistant import explain, retrieve
+from posify.assistant import explain
 from posify.database import Database
+from posify.capture_routes import install_capture_routes
+from posify.captures import capture_row
+from posify.ocr import LocalOCR
+from posify.retrieval import HybridRetriever
+from starlette.concurrency import run_in_threadpool
 from posify.schemas import (
     AssetCreate, IdentifyRequest, InspectionCreate, ObservationCreate, ProcedureCreate, AssistantRequest,
     Asset, Procedure, IdentityMatch, Inspection, InspectionDetail, ObservationReceipt,
@@ -62,6 +68,11 @@ def create_app(db_path=None, api_token=None):
             raise HTTPException(401, "Invalid API key")
 
     auth = [Depends(authorize)]
+    app.state.ocr = LocalOCR()
+    app.state.retriever = HybridRetriever()
+    capture_root = Path(os.getenv("POSIFY_CAPTURE_DIR", str(Path(database.path).parent / "captures")))
+    install_capture_routes(app, database, auth, capture_root)
+
     app.state.model_name = os.getenv("POSIFY_OLLAMA_MODEL", "")
     app.state.model_url = os.getenv("POSIFY_OLLAMA_URL", "http://127.0.0.1:11434")
     app.state.model_transport = None
@@ -75,10 +86,23 @@ def create_app(db_path=None, api_token=None):
                 "AND p.version=(SELECT MAX(q.version) FROM procedures q WHERE "
                 "q.site_id=p.site_id AND q.manufacturer=p.manufacturer AND q.model=p.model AND q.title=p.title)",
                 (body.site_id, a["manufacturer"], a["model"])).fetchall()
-        sources = retrieve([dict(r) for r in rows], body.question)
-        return await explain(sources, body.question, app.state.model_name,
-                             app.state.model_url, app.state.model_transport)
+        sources = await run_in_threadpool(app.state.retriever.search, [dict(r) for r in rows], body.question)
+        result = await explain(sources, body.question, app.state.model_name,
+                               app.state.model_url, app.state.model_transport)
+        result['retrieval_method'] = 'hybrid_e5' if app.state.retriever.model_path else 'lexical'
+        return result
 
+
+    @app.get("/v1/runtime", dependencies=auth)
+    def runtime_status():
+        return {
+            "ocr": app.state.ocr.readiness(),
+            "retrieval": app.state.retriever.readiness(),
+            "assistant": {"runtime": "ollama", "configured": bool(app.state.model_name),
+                          "model": app.state.model_name or None, "inference_verified": False},
+            "detector": {"status": "awaiting_external_artifact", "training": "external_colab",
+                         "inference_implemented": False},
+        }
 
     @app.get("/health")
     def health():
@@ -153,6 +177,8 @@ def create_app(db_path=None, api_token=None):
     def get_inspection(inspection_id: str, site_id: str = Query(min_length=1)):
         with database.connect() as db:
             data = inspection(db, inspection_id, site_id)
+            data["capture_ids"] = [r["capture_id"] for r in db.execute(
+                "SELECT capture_id FROM inspection_evidence WHERE inspection_id=? ORDER BY capture_id", (inspection_id,))]
             data["observations"] = [dict(r) for r in db.execute(
                 "SELECT * FROM observations WHERE inspection_id=? ORDER BY step_id", (inspection_id,))]
         return data
@@ -206,8 +232,14 @@ def create_app(db_path=None, api_token=None):
             procedures = [decode(r) for r in db.execute("SELECT * FROM procedures WHERE site_id=? ORDER BY id", (site_id,))]
             inspections = [dict(r) for r in db.execute("SELECT i.* FROM inspections i JOIN assets a ON a.id=i.asset_id WHERE a.site_id=? ORDER BY i.id", (site_id,))]
             observations = [dict(r) for r in db.execute("SELECT o.* FROM observations o JOIN inspections i ON i.id=o.inspection_id JOIN assets a ON a.id=i.asset_id WHERE a.site_id=? ORDER BY o.id", (site_id,))]
-        return {"schema_version": 1, "site_id": site_id, "generated_at": now(),
-                "assets": assets, "procedures": procedures, "inspections": inspections, "observations": observations}
+            captures = [capture_row(r) for r in db.execute("SELECT * FROM captures WHERE site_id=? ORDER BY id", (site_id,))]
+            assignments = [dict(r) for r in db.execute(
+                "SELECT ca.* FROM capture_assignments ca JOIN captures c ON c.id=ca.capture_id WHERE c.site_id=? ORDER BY ca.capture_id", (site_id,))]
+            evidence = [dict(r) for r in db.execute(
+                "SELECT e.* FROM inspection_evidence e JOIN captures c ON c.id=e.capture_id WHERE c.site_id=? ORDER BY e.inspection_id,e.capture_id", (site_id,))]
+        return {"schema_version": 2, "site_id": site_id, "generated_at": now(),
+                "assets": assets, "procedures": procedures, "inspections": inspections, "observations": observations,
+                "captures": captures, "capture_assignments": assignments, "inspection_evidence": evidence}
 
     @app.get("/v1/sites/{site_id}/audit", dependencies=auth)
     def history(site_id: str, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):

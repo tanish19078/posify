@@ -102,6 +102,7 @@ class Observation(StrictModel):
 
 
 class InspectionDetail(Inspection):
+    capture_ids: list[UUID] = Field(default_factory=list)
     site_id: str
     observations: list[Observation]
 
@@ -124,6 +125,9 @@ class SitePack(StrictModel):
     procedures: list[Procedure]
     inspections: list[Inspection]
     observations: list[Observation]
+    captures: list['Capture'] = Field(default_factory=list)
+    capture_assignments: list['CaptureAssignment'] = Field(default_factory=list)
+    inspection_evidence: list['InspectionEvidence'] = Field(default_factory=list)
 
 
 class SourceExcerpt(StrictModel):
@@ -135,9 +139,73 @@ class SourceExcerpt(StrictModel):
 
 
 class AssistantResponse(StrictModel):
+    retrieval_method: Literal['lexical', 'hybrid_e5'] = 'lexical'
     mode: Literal['insufficient_evidence', 'source_excerpts', 'model_draft']
     answer: str | None
     sources: list[SourceExcerpt]
     citations: list[str]
     requires_review: bool
     notice: str | None = None
+
+
+class Capture(StrictModel):
+    id: UUID
+    site_id: str
+    sha256: str
+    width: int
+    height: int
+    warnings: list[str]
+    created_at: str
+
+
+class CaptureReceipt(StrictModel):
+    replayed: bool
+    capture: Capture
+
+
+class OCRLineResponse(StrictModel):
+    text: str
+    confidence: float
+    box: tuple[int, int, int, int] | None
+
+
+class IdentifierEvidence(StrictModel):
+    kind: Literal['tag', 'serial']
+    value: str
+    line_index: int
+    confidence: float
+
+
+class CaptureAnalysis(StrictModel):
+    id: UUID
+    capture_id: UUID
+    created_at: str
+    engine: str
+    lines: list[OCRLineResponse]
+    identifiers: list[IdentifierEvidence]
+    status: Literal['insufficient_evidence', 'ambiguous_identifiers', 'candidate_found', 'no_match']
+    candidates: list[Asset]
+    requires_confirmation: bool
+
+
+class CaptureConfirm(StrictModel):
+    asset_id: UUID
+    asset_confirmed: Literal[True]
+
+
+class CaptureAssignment(StrictModel):
+    capture_id: UUID
+    asset_id: UUID
+    confirmed_at: str
+
+
+class InspectionEvidence(StrictModel):
+    inspection_id: UUID
+    capture_id: UUID
+
+
+class EvidenceAttach(StrictModel):
+    capture_id: UUID
+
+
+SitePack.model_rebuild()

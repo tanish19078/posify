@@ -34,6 +34,26 @@ CREATE TABLE IF NOT EXISTS audit(
  kind TEXT NOT NULL, entity_id TEXT NOT NULL, created_at TEXT NOT NULL,
  payload TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS captures(
+ id TEXT PRIMARY KEY, site_id TEXT NOT NULL, sha256 TEXT NOT NULL,
+ width INTEGER NOT NULL, height INTEGER NOT NULL, warnings TEXT NOT NULL,
+ created_at TEXT NOT NULL, UNIQUE(site_id,sha256)
+);
+CREATE TABLE IF NOT EXISTS capture_analyses(
+ id TEXT PRIMARY KEY, capture_id TEXT NOT NULL REFERENCES captures(id),
+ created_at TEXT NOT NULL, result TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS capture_assignments(
+ capture_id TEXT PRIMARY KEY REFERENCES captures(id),
+ asset_id TEXT NOT NULL REFERENCES assets(id), confirmed_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS inspection_evidence(
+ inspection_id TEXT NOT NULL REFERENCES inspections(id),
+ capture_id TEXT NOT NULL REFERENCES captures(id),
+ PRIMARY KEY(inspection_id,capture_id)
+);
+INSERT OR IGNORE INTO schema_version VALUES(2);
+CREATE INDEX IF NOT EXISTS capture_site ON captures(site_id);
 CREATE INDEX IF NOT EXISTS asset_site ON assets(site_id);
 CREATE INDEX IF NOT EXISTS audit_site ON audit(site_id,sequence);
 """
