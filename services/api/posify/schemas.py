@@ -1,6 +1,8 @@
 from typing import Annotated, Literal
 from uuid import UUID
 from posify.detector import Detection
+from posify.ocr import OCRWord
+from posify.recognition import EquipmentField, EquipmentCandidate, ReadingAttempt
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -190,6 +192,7 @@ class OCRLineResponse(StrictModel):
     text: str
     confidence: float
     box: tuple[int, int, int, int] | None
+    words: list[OCRWord] = Field(default_factory=list)
 
 
 class IdentifierEvidence(StrictModel):
@@ -200,6 +203,11 @@ class IdentifierEvidence(StrictModel):
 
 
 class CaptureAnalysis(StrictModel):
+    recognition_version: str | None = None
+    equipment_fields: list[EquipmentField] = Field(default_factory=list)
+    equipment_candidates: list[EquipmentCandidate] = Field(default_factory=list)
+    equipment_status: str = 'not_evaluated'
+    reading_attempts: list[ReadingAttempt] = Field(default_factory=list)
     detections: list[Detection] = Field(default_factory=list)
     inference_mode: Literal['ocr', 'detect_ocr'] = 'ocr'
     detector_revision: str | None = None

@@ -12,6 +12,8 @@ def extract_identifiers(lines, threshold=0.75):
         if line.confidence < threshold:
             continue
         for match in PATTERN.finditer(line.text):
+            if re.match(r'\s+\d[A-Za-z0-9._/\-]*', line.text[match.end():]):
+                continue  # Do not match a truncated prefix of a spaced identifier.
             label, value = match.groups()
             kind = 'serial' if label.lower().startswith(('serial', 's/n')) else 'tag'
             found.append({'kind': kind, 'value': value, 'line_index': index,
