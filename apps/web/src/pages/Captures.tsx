@@ -32,6 +32,7 @@ import {
 } from "../components/ui";
 import { useWorkspace } from "../context";
 import { analysisErrorMessage } from "../analysisErrors";
+import EquipmentEvidence from "../components/EquipmentEvidence";
 import { useLoad } from "../hooks";
 import type { Analysis, Asset, Assignment, Capture, Job } from "../types";
 
@@ -252,6 +253,9 @@ function Review({ id }: { id: string }) {
   const [imageUrl, setImageUrl] = useState("");
   const [zoom, setZoom] = useState(1);
   const [crop, setCrop] = useState(false);
+  const [evidenceBox, setEvidenceBox] = useState<
+    [number, number, number, number] | null
+  >(null);
   const [overlay, setOverlay] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [job, setJob] = useState<Job>();
@@ -364,6 +368,7 @@ function Review({ id }: { id: string }) {
     return <ErrorPanel message={meta.error} retry={meta.reload} />;
   const capture = meta.data!;
   const box = latest?.detections[0]?.box;
+  const activeBox = evidenceBox || (crop ? box : null);
   const confirmedAsset = assets.data?.find(
     (x) => x.id === assignment.data?.asset_id,
   );
@@ -373,8 +378,8 @@ function Review({ id }: { id: string }) {
         role="img"
         aria-label="Equipment capture with measured detection regions"
         viewBox={
-          crop && box
-            ? `${box[0]} ${box[1]} ${box[2] - box[0]} ${box[3] - box[1]}`
+          activeBox
+            ? `${activeBox[0]} ${activeBox[1]} ${Math.max(1, activeBox[2] - activeBox[0])} ${Math.max(1, activeBox[3] - activeBox[1])}`
             : `0 0 ${capture.width} ${capture.height}`
         }
         style={{ transform: `scale(${zoom})` }}
@@ -435,9 +440,10 @@ function Review({ id }: { id: string }) {
           <div className="image-toolbar">
             <div className="segmented">
               <button
-                className={!crop ? "selected" : ""}
+                className={!crop && !evidenceBox ? "selected" : ""}
                 onClick={() => {
                   setCrop(false);
+                  setEvidenceBox(null);
                   setZoom(1);
                 }}
               >
@@ -445,9 +451,10 @@ function Review({ id }: { id: string }) {
               </button>
               <button
                 disabled={!box}
-                className={crop ? "selected" : ""}
+                className={crop && !evidenceBox ? "selected" : ""}
                 onClick={() => {
                   setCrop(true);
+                  setEvidenceBox(null);
                   setZoom(1);
                 }}
               >
@@ -506,11 +513,11 @@ function Review({ id }: { id: string }) {
                 {" "}
                 Photo:{" "}
                 <a
-                  href="https://commons.wikimedia.org/wiki/File:Nameplate_of_a_CT.jpg"
+                  href="https://commons.wikimedia.org/wiki/File:DC_motor_with_permanent_magnet_excitation.png"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  SAM31416 · CC BY-SA 4.0 ↗
+                  Oliver Wallscheid · CC BY 4.0 ↗
                 </a>
               </>
             )}
@@ -519,7 +526,7 @@ function Review({ id }: { id: string }) {
         <Panel
           className="evidence-panel"
           title="What the image tells us"
-          caption="Machine output. Ready for your review."
+          caption="Structured fields, source evidence and catalogue agreement."
           action={<ScanLine size={19} />}
         >
           {analyses.loading ? (
@@ -528,83 +535,101 @@ function Review({ id }: { id: string }) {
             <ErrorPanel message={analyses.error} retry={analyses.reload} />
           ) : latest ? (
             <>
-              <div className="detection-summary">
-                <span className="detection-icon">
-                  <ScanLine size={23} />
-                </span>
-                <div>
-                  <strong>
-                    {latest.detections.length
-                      ? "Nameplate region detected"
-                      : "OCR analysis complete"}
-                  </strong>
-                  <small>{latest.detector_revision || latest.engine}</small>
-                </div>
-                <Badge tone="green">Processed</Badge>
-              </div>
-              {latest.detections.length > 0 && (
-                <div className="score-row">
-                  <span>
-                    Detector score <Info size={13} />
+              <EquipmentEvidence
+                analysis={latest}
+                inspect={(rect) => {
+                  setEvidenceBox([
+                    Math.max(0, rect[0] - 8),
+                    Math.max(0, rect[1] - 8),
+                    Math.min(capture.width, rect[2] + 8),
+                    Math.min(capture.height, rect[3] + 8),
+                  ]);
+                  setZoom(1);
+                  document
+                    .querySelector(".capture-panel")
+                    ?.scrollIntoView({ block: "center" });
+                }}
+              />
+              <details className="raw-diagnostics">
+                <summary>Raw OCR and detector diagnostics</summary>
+                <div className="detection-summary">
+                  <span className="detection-icon">
+                    <ScanLine size={23} />
                   </span>
-                  <b>{latest.detections[0].confidence.toFixed(3)}</b>
-                  <div className="score-track">
-                    <span
-                      style={{
-                        width: `${latest.detections[0].confidence * 100}%`,
-                      }}
-                    />
+                  <div>
+                    <strong>
+                      {latest.detections.length
+                        ? "Nameplate region detected"
+                        : "OCR analysis complete"}
+                    </strong>
+                    <small>{latest.detector_revision || latest.engine}</small>
                   </div>
-                  <small>
-                    A detector score measures region confidence, not asset
-                    identity.
-                  </small>
+                  <Badge tone="green">Processed</Badge>
                 </div>
-              )}
-              <div className="section-label">
-                <span>EXTRACTED TEXT</span>
-                <Badge tone="amber">Unverified OCR</Badge>
-              </div>
-              <div className="ocr-lines">
-                {latest.lines.length ? (
-                  latest.lines.map((line, i) => (
-                    <div key={i}>
-                      <span className="line-number">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <code>{line.text}</code>
-                      <span className="ocr-confidence" title="OCR confidence">
-                        {Math.round(line.confidence * 100)}%
-                      </span>
+                {latest.detections.length > 0 && (
+                  <div className="score-row">
+                    <span>
+                      Detector score <Info size={13} />
+                    </span>
+                    <b>{latest.detections[0].confidence.toFixed(3)}</b>
+                    <div className="score-track">
+                      <span
+                        style={{
+                          width: `${latest.detections[0].confidence * 100}%`,
+                        }}
+                      />
                     </div>
-                  ))
-                ) : (
-                  <p className="muted">
-                    No readable text was extracted. Try a closer, sharper
-                    capture.
-                  </p>
+                    <small>
+                      A detector score measures region confidence, not asset
+                      identity.
+                    </small>
+                  </div>
                 )}
-              </div>
-              <div className="evidence-notice">
-                <Info size={17} />
-                <div>
-                  <strong>
-                    {latest.status === "candidate_found"
-                      ? "A possible factory asset was found"
-                      : "Identity needs your confirmation"}
-                  </strong>
-                  <p>
-                    {latest.status === "candidate_found"
-                      ? "Check the physical identifiers against the suggested record below."
-                      : "Review the physical nameplate and select the correct factory record. OCR alone has not verified an asset."}
-                  </p>
+                <div className="section-label">
+                  <span>RAW OCR · NOT IDENTIFICATION ACCURACY</span>
+                  <Badge tone="amber">Unverified text</Badge>
                 </div>
-              </div>
-              {latest.pipeline_warnings.map((warning, i) => (
-                <div className="notice" key={i}>
-                  {readable(warning)}
+                <div className="ocr-lines">
+                  {latest.lines.length ? (
+                    latest.lines.map((line, i) => (
+                      <div key={i}>
+                        <span className="line-number">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <code>{line.text}</code>
+                        <span className="ocr-confidence" title="OCR confidence">
+                          {Math.round(line.confidence * 100)}%
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="muted">
+                      No readable text was extracted. Try a closer, sharper
+                      capture.
+                    </p>
+                  )}
                 </div>
-              ))}
+                <div className="evidence-notice">
+                  <Info size={17} />
+                  <div>
+                    <strong>
+                      {latest.status === "candidate_found"
+                        ? "A possible factory asset was found"
+                        : "Identity needs your confirmation"}
+                    </strong>
+                    <p>
+                      {latest.status === "candidate_found"
+                        ? "Check the physical identifiers against the suggested record below."
+                        : "Review the physical nameplate and select the correct factory record. OCR alone has not verified an asset."}
+                    </p>
+                  </div>
+                </div>
+                {latest.pipeline_warnings.map((warning, i) => (
+                  <div className="notice" key={i}>
+                    {readable(warning)}
+                  </div>
+                ))}
+              </details>
             </>
           ) : (
             <Empty title="Ready when you are">
@@ -646,9 +671,7 @@ function Review({ id }: { id: string }) {
             </div>
           )}
           {job?.status === "failed" && (
-            <ErrorPanel
-              message={analysisErrorMessage(job.error_code)}
-            />
+            <ErrorPanel message={analysisErrorMessage(job.error_code)} />
           )}
         </Panel>
       </div>
