@@ -1,7 +1,7 @@
 # posify
 
-An equipment identification and inspection backend, designed for an offline field
-client. No product name is selected. Start with evidence-backed asset identity and
+A web-first equipment identification and inspection backend with shared catalogue
+knowledge and factory-specific installed assets. No product name is selected. Start with evidence-backed asset identity and
 versioned procedures; connect a local model for explanations without giving it
 control over maintenance state.
 
@@ -42,10 +42,20 @@ procedure search and optional Ollama draft generation.
 Image upload, OCR adapters, conservative identifier extraction, confirmed capture
 assignment and inspection evidence are implemented. PaddleOCR and E5 require local
 weights and optional dependencies; their adapters are not benchmarked here.
-This version does not perform equipment detection, QR decoding, document ingestion,
-3D reconstruction, mobile inference or work-order integrations.
+An inference-only YOLO11 ONNX adapter and durable OCR/detector job worker are
+implemented. No trained detector artifact has been provided or benchmarked.
+QR decoding, PDF ingestion, frontend, 3D and work-order integrations remain pending.
 The site pack is a full JSON snapshot; observation replay is the first sync
 primitive, not a complete mobile sync implementation.
+
+## Database, catalogue and workers
+
+SQLite remains available for local development; PostgreSQL and Alembic migrations
+are implemented. See [database and ownership](docs/DATABASE.md),
+[background jobs](docs/ANALYSIS_JOBS.md) and [detector contract](docs/DETECTOR_CONTRACT.md).
+Register an organization and factory before creating assets, procedures or captures.
+Global model/manual drafts need explicit publication and asset links need confirmation.
+Global source excerpts are labelled separately from factory procedures.
 
 ## Images and local ML adapters
 
@@ -70,6 +80,5 @@ pytest -q
 python scripts/export_contracts.py --check
 ```
 
-Local single-instance development only: replace shared-token authentication with
-user/site authorization and add production persistence, migrations and deployment
-controls before using across a real organization. See [build plan](docs/BUILD_PLAN.md).
+Development access still uses an instance-wide shared token. Add individual identity,
+role/site authorization and operational controls before real multi-user deployment. See [build plan](docs/BUILD_PLAN.md).
