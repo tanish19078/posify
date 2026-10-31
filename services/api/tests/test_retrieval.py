@@ -8,7 +8,8 @@ from test_api import client, setup_records
 def test_runtime_reports_configuration_not_fake_readiness(client):
     r = client.get('/v1/runtime')
     assert r.status_code == 200
-    assert r.json()['detector']['inference_implemented'] is False
+    assert r.json()['detector']['inference_implemented'] is True
+    assert r.json()['detector']['loaded'] is False
     assert r.json()['assistant']['inference_verified'] is False
     assert client.get('/v1/runtime', headers={'X-API-Key': 'bad'}).status_code == 401
 

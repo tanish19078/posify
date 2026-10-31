@@ -1,4 +1,8 @@
 from uuid import uuid4
+import os
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+from posify.database import Database
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,12 +12,46 @@ from posify.app import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(str(tmp_path / 'test.db'), 'test-key')) as c:
-        c.headers['X-API-Key'] = 'test-key'
-        yield c
+    target = os.getenv('POSIFY_TEST_DATABASE_URL')
+    admin = None
+    schema = 'test_' + uuid4().hex
+    url = None
+    if target:
+        parsed = make_url(target)
+        if parsed.drivername in {'postgresql', 'postgres'}:
+            parsed = parsed.set(drivername='postgresql+psycopg')
+        admin = create_engine(parsed)
+        with admin.begin() as connection:
+            connection.execute(text('CREATE SCHEMA "' + schema + '"'))
+        url = parsed.update_query_dict({'options': '-csearch_path=' + schema})
+        prepared = Database(str(tmp_path / 'test.db'), url=url, migrate=True)
+        prepared.engine.dispose()
+    try:
+        with TestClient(create_app(str(tmp_path / 'test.db'), 'test-key', database_url=url)) as c:
+            c.headers['X-API-Key'] = 'test-key'
+            register_factory(c, 'plant-a')
+            register_factory(c, 'plant-b')
+            yield c
+        c.app.state.database.engine.dispose()
+    finally:
+        if admin:
+            with admin.begin() as connection:
+                connection.execute(text('DROP SCHEMA "' + schema + '" CASCADE'))
+            admin.dispose()
+
+
+def register_factory(c, site):
+    org = c.post('/v1/organizations', json={'name': 'Test organization'}).json()
+    r = c.post('/v1/factories', json={'id': site, 'organization_id': org['id'], 'name': site})
+    assert r.status_code == 201, r.text
 
 
 def setup_records(c, site='plant-a', model='M1', version=1):
+    # Restart tests instantiate a fresh client without the fixture's seed factories.
+    with c.app.state.database.connect() as db:
+        known = db.execute('SELECT id FROM factories WHERE id=?', (site,)).fetchone()
+    if not known:
+        register_factory(c, site)
     a = c.post('/v1/assets', json=dict(site_id=site, tag='P-104', manufacturer='Example',
                model=model, serial='S-001', category='pump', location='Bay 1'))
     assert a.status_code == 201, a.text
