@@ -1,6 +1,95 @@
 {
   "components": {
     "schemas": {
+      "AnalysisJob": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "title": "Attempts",
+            "type": "integer"
+          },
+          "capture_id": {
+            "format": "uuid",
+            "title": "Capture Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_attempts": {
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "ocr",
+              "detect_ocr"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaptureAnalysis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "site_id": {
+            "title": "Site Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "capture_id",
+          "mode",
+          "status",
+          "attempts",
+          "max_attempts",
+          "error_code",
+          "result",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AnalysisJob",
+        "type": "object"
+      },
       "Asset": {
         "additionalProperties": false,
         "properties": {
@@ -303,6 +392,24 @@
             "title": "Created At",
             "type": "string"
           },
+          "detections": {
+            "items": {
+              "$ref": "#/components/schemas/Detection"
+            },
+            "title": "Detections",
+            "type": "array"
+          },
+          "detector_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector Revision"
+          },
           "engine": {
             "title": "Engine",
             "type": "string"
@@ -319,11 +426,27 @@
             "title": "Identifiers",
             "type": "array"
           },
+          "inference_mode": {
+            "default": "ocr",
+            "enum": [
+              "ocr",
+              "detect_ocr"
+            ],
+            "title": "Inference Mode",
+            "type": "string"
+          },
           "lines": {
             "items": {
               "$ref": "#/components/schemas/OCRLineResponse"
             },
             "title": "Lines",
+            "type": "array"
+          },
+          "pipeline_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pipeline Warnings",
             "type": "array"
           },
           "requires_confirmation": {
@@ -420,6 +543,274 @@
         "title": "CaptureReceipt",
         "type": "object"
       },
+      "CatalogCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "manufacturer": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "source_ref": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "variant": {
+            "default": "base",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Variant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "manufacturer",
+          "model",
+          "category",
+          "source_ref"
+        ],
+        "title": "CatalogCreate",
+        "type": "object"
+      },
+      "CatalogDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_model_id": {
+            "format": "uuid",
+            "title": "Catalog Model Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_ref": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "source_text": {
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Source Text",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "revision",
+          "source_text",
+          "source_ref",
+          "id",
+          "catalog_model_id",
+          "status",
+          "created_at"
+        ],
+        "title": "CatalogDocument",
+        "type": "object"
+      },
+      "CatalogLink": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "format": "uuid",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "catalog_model_id": {
+            "format": "uuid",
+            "title": "Catalog Model Id",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "title": "Confirmed At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "catalog_model_id",
+          "confirmed_at"
+        ],
+        "title": "CatalogLink",
+        "type": "object"
+      },
+      "CatalogModel": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Category",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "manufacturer": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "source_ref": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "variant": {
+            "default": "base",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Variant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "manufacturer",
+          "model",
+          "category",
+          "source_ref",
+          "id",
+          "status",
+          "created_at"
+        ],
+        "title": "CatalogModel",
+        "type": "object"
+      },
+      "Detection": {
+        "properties": {
+          "box": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Box",
+            "type": "array"
+          },
+          "class_id": {
+            "title": "Class Id",
+            "type": "integer"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "class_id",
+          "label",
+          "confidence",
+          "box"
+        ],
+        "title": "Detection",
+        "type": "object"
+      },
+      "DocumentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_ref": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "source_text": {
+            "maxLength": 30000,
+            "minLength": 1,
+            "title": "Source Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "revision",
+          "source_text",
+          "source_ref"
+        ],
+        "title": "DocumentCreate",
+        "type": "object"
+      },
       "EvidenceAttach": {
         "additionalProperties": false,
         "properties": {
@@ -433,6 +824,69 @@
           "capture_id"
         ],
         "title": "EvidenceAttach",
+        "type": "object"
+      },
+      "Factory": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "name",
+          "created_at"
+        ],
+        "title": "Factory",
+        "type": "object"
+      },
+      "FactoryCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "name"
+        ],
+        "title": "FactoryCreate",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -737,6 +1191,50 @@
         "title": "InspectionEvidence",
         "type": "object"
       },
+      "JobCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mode": {
+            "default": "ocr",
+            "enum": [
+              "ocr",
+              "detect_ocr"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "JobCreate",
+        "type": "object"
+      },
+      "LinkCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_confirmed": {
+            "title": "Asset Confirmed",
+            "type": "boolean"
+          },
+          "catalog_model_id": {
+            "format": "uuid",
+            "title": "Catalog Model Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "catalog_model_id",
+          "asset_confirmed"
+        ],
+        "title": "LinkCreate",
+        "type": "object"
+      },
       "OCRLineResponse": {
         "additionalProperties": false,
         "properties": {
@@ -886,6 +1384,49 @@
           "observation"
         ],
         "title": "ObservationReceipt",
+        "type": "object"
+      },
+      "Organization": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "id",
+          "created_at"
+        ],
+        "title": "Organization",
+        "type": "object"
+      },
+      "OrganizationCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OrganizationCreate",
         "type": "object"
       },
       "Procedure": {
@@ -1094,6 +1635,18 @@
       "SourceExcerpt": {
         "additionalProperties": false,
         "properties": {
+          "document_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
           "excerpt": {
             "title": "Excerpt",
             "type": "string"
@@ -1103,9 +1656,36 @@
             "type": "string"
           },
           "procedure_id": {
-            "format": "uuid",
-            "title": "Procedure Id",
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Procedure Id"
+          },
+          "source_kind": {
+            "default": "factory_procedure",
+            "enum": [
+              "factory_procedure",
+              "catalog_document"
+            ],
+            "title": "Source Kind",
             "type": "string"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
           },
           "title": {
             "title": "Title",
@@ -1118,7 +1698,6 @@
         },
         "required": [
           "id",
-          "procedure_id",
           "version",
           "title",
           "excerpt"
@@ -1396,6 +1975,457 @@
         "summary": "Assistant Query"
       }
     },
+    "/v1/catalog/documents/{document_id}/publish": {
+      "post": {
+        "operationId": "publish_document_v1_catalog_documents__document_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Publish Document"
+      }
+    },
+    "/v1/catalog/models": {
+      "get": {
+        "operationId": "models_v1_catalog_models_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_drafts",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Drafts",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogModel"
+                  },
+                  "title": "Response Models V1 Catalog Models Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Models"
+      },
+      "post": {
+        "operationId": "create_model_v1_catalog_models_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Create Model"
+      }
+    },
+    "/v1/catalog/models/{model_id}/documents": {
+      "get": {
+        "operationId": "documents_v1_catalog_models__model_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_drafts",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Drafts",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogDocument"
+                  },
+                  "title": "Response Documents V1 Catalog Models  Model Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Documents"
+      },
+      "post": {
+        "operationId": "create_document_v1_catalog_models__model_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Create Document"
+      }
+    },
+    "/v1/catalog/models/{model_id}/publish": {
+      "post": {
+        "operationId": "publish_model_v1_catalog_models__model_id__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Model Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Publish Model"
+      }
+    },
+    "/v1/factories": {
+      "get": {
+        "operationId": "factories_v1_factories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Factory"
+                  },
+                  "title": "Response Factories V1 Factories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Factories"
+      },
+      "post": {
+        "operationId": "factory_v1_factories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FactoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Factory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Factory"
+      }
+    },
     "/v1/identify": {
       "post": {
         "operationId": "identify_v1_identify_post",
@@ -1644,6 +2674,109 @@
         "summary": "Submit"
       }
     },
+    "/v1/organizations": {
+      "get": {
+        "operationId": "organizations_v1_organizations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Organization"
+                  },
+                  "title": "Response Organizations V1 Organizations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Organizations"
+      },
+      "post": {
+        "operationId": "organization_v1_organizations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Organization"
+      }
+    },
     "/v1/procedures": {
       "post": {
         "operationId": "create_procedure_v1_procedures_post",
@@ -1706,6 +2839,122 @@
           }
         ],
         "summary": "Runtime Status"
+      }
+    },
+    "/v1/sites/{site_id}/assets/{asset_id}/catalog-link": {
+      "get": {
+        "operationId": "get_link_v1_sites__site_id__assets__asset_id__catalog_link_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Link"
+      },
+      "post": {
+        "operationId": "link_v1_sites__site_id__assets__asset_id__catalog_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Link"
       }
     },
     "/v1/sites/{site_id}/audit": {
@@ -2116,6 +3365,70 @@
         "summary": "Capture Image"
       }
     },
+    "/v1/sites/{site_id}/captures/{capture_id}/jobs": {
+      "post": {
+        "operationId": "enqueue_v1_sites__site_id__captures__capture_id__jobs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capture_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Capture Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Enqueue"
+      }
+    },
     "/v1/sites/{site_id}/inspections/{inspection_id}/evidence": {
       "post": {
         "operationId": "attach_evidence_v1_sites__site_id__inspections__inspection_id__evidence_post",
@@ -2178,6 +3491,131 @@
           }
         ],
         "summary": "Attach Evidence"
+      }
+    },
+    "/v1/sites/{site_id}/jobs": {
+      "get": {
+        "operationId": "list_jobs_v1_sites__site_id__jobs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnalysisJob"
+                  },
+                  "title": "Response List Jobs V1 Sites  Site Id  Jobs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Jobs"
+      }
+    },
+    "/v1/sites/{site_id}/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_v1_sites__site_id__jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisJob"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Job"
       }
     },
     "/v1/sites/{site_id}/pack": {
