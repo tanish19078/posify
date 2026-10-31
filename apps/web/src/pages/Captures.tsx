@@ -31,6 +31,7 @@ import {
   Panel,
 } from "../components/ui";
 import { useWorkspace } from "../context";
+import { analysisErrorMessage } from "../analysisErrors";
 import { useLoad } from "../hooks";
 import type { Analysis, Asset, Assignment, Capture, Job } from "../types";
 
@@ -646,10 +647,7 @@ function Review({ id }: { id: string }) {
           )}
           {job?.status === "failed" && (
             <ErrorPanel
-              message={
-                job.error_code ||
-                "Analysis failed. Check the configured worker and retry."
-              }
+              message={analysisErrorMessage(job.error_code)}
             />
           )}
         </Panel>
