@@ -10,7 +10,8 @@ to factory-specific procedures and inspection records.
 
 **Status:** backend development. The API, persistence, capture workflow and analysis
 worker are implemented. The web client is pending. Detector training runs separately
-in Colab; trained weights and field accuracy results are not included here.
+in Colab. The supplied nameplate ONNX export has passed local reference and public-image
+integration checks; weights stay outside Git. See [trained detector setup](docs/TRAINED_DETECTOR.md).
 
 ## Architecture
 
@@ -166,7 +167,7 @@ host. See [database and deployment](docs/DATABASE.md) for operational details.
 | --- | --- | --- |
 | OCR baseline | `POSIFY_OCR_ENGINE=tesseract` | Real synthetic-nameplate walkthrough and parsing tests |
 | PaddleOCR | `.[ocr]`, local detection/recognition directories | Adapter tests; no real-weight evaluation |
-| YOLO11 detector | `.[detector]`, `POSIFY_DETECTOR_MANIFEST` | Manifest, preprocessing, decoding and crop-coordinate tests; trained export pending |
+| YOLO11 detector | `.[detector]`, `POSIFY_DETECTOR_MANIFEST` | Trained export reference check and four public-image detection/OCR smoke cases |
 | E5 retrieval | `.[retrieval]`, `POSIFY_EMBEDDING_DIR` | Controlled encoder tests; local weights not evaluated |
 | Ollama drafts | `POSIFY_OLLAMA_MODEL`, optional runtime URL | Simulated responses; model evaluation pending |
 
@@ -200,7 +201,7 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently covers 101 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
+currently covers 111 tests including an operator-provisioned artifact reference check; PostgreSQL validation runs in CI. This does not establish industrial detection
 accuracy, latency or production readiness. Optional model extras are outside the
 core dependency lock and require their own environment validation.
 
@@ -209,5 +210,5 @@ supervisor review, reviewed link corrections, queue capacity
 limits, bounded lease renewal, cancellation and integrity-checked backup/restore
 are implemented. Remaining work includes the web client,
 SSO, physical identity-field corrections, large-collection vector indexing,
-model evaluation, storage retention policy, external monitoring and deployment-specific SSO integration. QR decoding, 3D reconstruction and work-order
+broader model evaluation, storage retention policy, external monitoring and deployment-specific SSO integration. QR decoding, 3D reconstruction and work-order
 integrations are outside the current implementation.

@@ -1,0 +1,4 @@
+-r requirements-dev.lock
+flatbuffers==25.12.19
+onnxruntime==1.31.1
+protobuf==7.36.2

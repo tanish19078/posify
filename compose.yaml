@@ -13,7 +13,10 @@ services:
       timeout: 5s
       retries: 15
   migrate:
-    build: .
+    build: &backend_build
+      context: .
+      args:
+        POSIFY_WITH_DETECTOR: ${POSIFY_WITH_DETECTOR:-false}
     command: [python, scripts/migrate.py]
     environment:
       POSIFY_DATABASE_URL: postgresql+psycopg://posify:${POSIFY_DB_PASSWORD}@db:5432/posify
@@ -21,7 +24,7 @@ services:
       db:
         condition: service_healthy
   api:
-    build: .
+    build: *backend_build
     environment: &runtime
       POSIFY_API_TOKEN: ${POSIFY_API_TOKEN:-}
       POSIFY_AUTH_MODE: ${POSIFY_AUTH_MODE:-development}
@@ -33,6 +36,7 @@ services:
       POSIFY_DOCUMENT_DIR: /data/documents
       POSIFY_OCR_ENGINE: ${POSIFY_OCR_ENGINE:-disabled}
       POSIFY_DETECTOR_MANIFEST: ${POSIFY_DETECTOR_MANIFEST:-}
+      POSIFY_DETECTOR_THREADS: ${POSIFY_DETECTOR_THREADS:-1}
       POSIFY_PADDLE_DET_DIR: ${POSIFY_PADDLE_DET_DIR:-}
       POSIFY_PADDLE_REC_DIR: ${POSIFY_PADDLE_REC_DIR:-}
       POSIFY_EMBEDDING_DIR: ${POSIFY_EMBEDDING_DIR:-}
@@ -53,7 +57,7 @@ services:
       timeout: 5s
       retries: 5
   worker:
-    build: .
+    build: *backend_build
     command: [python, -m, posify.worker]
     environment: *runtime
     volumes:
