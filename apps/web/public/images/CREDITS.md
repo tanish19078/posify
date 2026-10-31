@@ -1,5 +1,17 @@
 # Demo image
 
+## Machine with nameplate
+
+`machine.jpg`: “DC motor with permanent magnet excitation.png”, Oliver Wallscheid.
+https://commons.wikimedia.org/wiki/File:DC_motor_with_permanent_magnet_excitation.png
+CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Changes: resized to 2400 pixels wide, transparent background composited on white,
+JPEG compression. A cutaway motor is shown; it is not an operating factory scene.
+The linked sample catalogue is a photo-transcription fixture, not manufacturer
+verification. Its near-code distractor is explicitly synthetic.
+
+## Earlier plate-only demo
+
 “Nameplate of a CT.jpg” by SAM31416, Wikimedia Commons.
 https://commons.wikimedia.org/wiki/File:Nameplate_of_a_CT.jpg
 
