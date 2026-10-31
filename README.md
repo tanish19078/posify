@@ -39,10 +39,21 @@ immutable procedure versions; inspection creation, observations and submission;
 idempotent offline observation replay; site-pack export; audit history; local
 procedure search and optional Ollama draft generation.
 
-This version does not perform OCR, equipment detection, document ingestion,
-3D reconstruction, image uploads, mobile inference or work-order integrations.
+Image upload, OCR adapters, conservative identifier extraction, confirmed capture
+assignment and inspection evidence are implemented. PaddleOCR and E5 require local
+weights and optional dependencies; their adapters are not benchmarked here.
+This version does not perform equipment detection, QR decoding, document ingestion,
+3D reconstruction, mobile inference or work-order integrations.
 The site pack is a full JSON snapshot; observation replay is the first sync
 primitive, not a complete mobile sync implementation.
+
+## Images and local ML adapters
+
+See [capture API](docs/CAPTURE_API.md) for uploads and evidence attachment, and
+[local model setup](docs/LOCAL_MODELS.md) for explicit OCR/E5/Ollama configuration.
+`GET /v1/runtime` reports component configuration without claiming successful inference.
+Site-pack schema is now version 2. No training code or notebooks are included;
+detector training stays in your separate Colab workflow.
 
 ## Local model
 
