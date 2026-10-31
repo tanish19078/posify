@@ -79,7 +79,7 @@ When the separately trained detector is ready, provide:
 YOLO export variants have different output layouts. Do not guess decoding from a
 filename or treat arbitrary ONNX files as trusted. The implemented adapter validates
 the manifest and digest. Reproduce your reference outputs before enabling it.
-See `docs/DETECTOR_CONTRACT.md` for the exact supported raw YOLO11 layout. Detection locates a category; it never establishes an installed asset ID.
+See the [detector contract](DETECTOR_CONTRACT.md) for the exact supported raw YOLO11 layout. Detection locates a category; it never establishes an installed asset ID.
 
 ## Sources
 

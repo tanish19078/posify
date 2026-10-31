@@ -3,7 +3,7 @@
 All calls require `X-API-Key`. Shared-token development access is instance-wide;
 site filters are not a substitute for per-user site authorization.
 
-Register an organization/factory before uploading. See `docs/DATABASE.md`.
+Register an organization/factory before uploading. See [database and ownership](DATABASE.md).
 
 ## Upload
 
@@ -66,7 +66,7 @@ any inspection step; record its result separately through the observation API.
 
 Site-pack schema version 2 adds `captures`, `capture_assignments` and
 `inspection_evidence`. Image bytes and OCR analyses are not embedded in packs;
-a future mobile client must separately download/cache required image content.
+a future web client must separately download/cache required image content.
 The snapshot is not a delta cursor. Older clients must reject unsupported versions.
 
 ## Local walkthrough
@@ -76,4 +76,4 @@ Run `python scripts/capture_demo.py` against the local API, configured with
 verifies real OCR, confirms identity, attaches evidence and submits an inspection.
 It does not train or evaluate an industrial detector.
 
-For background OCR/detector execution, use the job endpoints in ANALYSIS_JOBS.md. Synchronous analysis remains OCR-only.
+For background OCR/detector execution, use the [job endpoints](ANALYSIS_JOBS.md). Synchronous analysis remains OCR-only.
