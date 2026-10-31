@@ -5,3 +5,11 @@ __pycache__/
 .env
 var/
 *.db
+
+# Provision inference artifacts locally; never commit weights or captured images.
+models/
+*.onnx
+*.pt
+*.safetensors
+*.gguf
+*.litertlm
