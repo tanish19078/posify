@@ -89,6 +89,7 @@ original inspection. Managers can request catalogue-link or capture-assignment
 corrections for another individual to decide. Attached capture evidence cannot be
 reassigned. Review and correction records are immutable after a decision.
 
+See [operations and recovery](docs/OPERATIONS.md) for monitoring and snapshot commands.
 See [access and review operations](docs/ACCESS_AND_REVIEW.md) for the role matrix,
 provisioning API and request formats.
 
@@ -174,7 +175,8 @@ Weights are provisioned by the operator; the application does not download them.
 Missing configured components fail explicitly. Training scripts remain outside this
 repository. The [detector contract](docs/DETECTOR_CONTRACT.md) defines the exact
 static FP32 ONNX export required from Colab, including class order and SHA-256.
-See [local model configuration](docs/LOCAL_MODELS.md) for setup and limitations.
+See [local model configuration](docs/LOCAL_MODELS.md) for setup and limitations,
+and [PDF import](docs/DOCUMENTS.md) for page-preserving draft ingestion.
 
 ## Repository map
 
@@ -198,12 +200,14 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently covers 85 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
+currently covers 101 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
 accuracy, latency or production readiness. Optional model extras are outside the
 core dependency lock and require their own environment validation.
 
-Individual access, supervisor review, reviewed link corrections, queue capacity
-limits and cancellation are implemented. Remaining work includes the web client,
-SSO, physical identity-field corrections, PDF ingestion, persistent retrieval indexing,
-model evaluation, worker heartbeats, monitoring, retention and tested backup restoration. QR decoding, 3D reconstruction and work-order
+PDF draft imports with page citations, persistent passage caching, individual access,
+supervisor review, reviewed link corrections, queue capacity
+limits, bounded lease renewal, cancellation and integrity-checked backup/restore
+are implemented. Remaining work includes the web client,
+SSO, physical identity-field corrections, large-collection vector indexing,
+model evaluation, storage retention policy, external monitoring and deployment-specific SSO integration. QR decoding, 3D reconstruction and work-order
 integrations are outside the current implementation.

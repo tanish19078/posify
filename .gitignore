@@ -20,3 +20,6 @@ dist/
 # Locally provisioned individual access credentials.
 credentials/
 *.credentials.json
+
+# Snapshots contain private registry records and credential digests.
+backups/

@@ -4,7 +4,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 appuser \
-    && mkdir -p /data/captures /app/var && chown -R appuser:appuser /data /app
+    && mkdir -p /data/captures /data/documents /app/var && chown -R appuser:appuser /data /app
 COPY requirements-dev.lock ./
 RUN pip install --no-cache-dir -r requirements-dev.lock
 COPY pyproject.toml README.md ./

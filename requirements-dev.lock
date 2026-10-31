@@ -18,11 +18,12 @@ opentelemetry-api==1.45.2
 packaging==26.3
 pillow==12.3.0
 pluggy==1.7.0
-psycopg==3.3.6
 psycopg-binary==3.3.6
+psycopg==3.3.6
 pydantic==2.14.2
 pydantic_core==2.50.2
 Pygments==2.21.0
+pypdf==6.10.0
 pytest==9.2.0
 SQLAlchemy==2.0.55
 starlette==1.10.0
