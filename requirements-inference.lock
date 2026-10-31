@@ -2,3 +2,15 @@
 flatbuffers==25.12.19
 onnxruntime==1.31.1
 protobuf==7.36.2
+opencv-python-headless==5.0.0.93
+rapidocr==3.10.0
+pyclipper==1.4.0
+Shapely==2.2.0
+PyYAML==6.0.3
+omegaconf==2.4.0
+requests==2.34.2
+colorlog==6.12.0
+six==1.17.0
+tqdm==4.70.1
+charset-normalizer==3.5.2
+urllib3==2.8.0

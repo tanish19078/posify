@@ -1,21 +1,25 @@
 # posify
 
-Web-first infrastructure for identifying industrial equipment, retrieving applicable
-maintenance knowledge and recording inspections with traceable evidence.
+A web-based equipment evidence and inspection workbench. It detects nameplates,
+runs a local PP-OCRv6 reader or Tesseract baseline with alternative views, extracts proposed equipment fields and checks
+published manufacturer/model catalogue records. Technicians review the source
+image before confirming an individual factory asset and recording an inspection.
 
-A field user uploads an equipment or nameplate image. Local inference produces
-regions, text and identifier evidence; the backend proposes factory asset matches
-for human confirmation. Confirmed assets connect shared manufacturer/model knowledge
-to factory-specific procedures and inspection records.
+**Current capability:** nameplate localisation, bounded contrast/orientation and
+perspective reading proposals, source-linked field extraction, catalogue agreement
+checks, factory records and inspection workflows. The reader can abstain or show
+conflicting evidence. It does **not** recognise machine models from overall
+appearance, reconstruct 3D equipment or establish identity automatically.
 
-**Status:** the API, persistence, analysis worker and Warm Workbench web client
-are implemented. The client covers capture review, factory assets, shared catalogue,
-knowledge and inspections. Detector training runs separately in Colab. The supplied nameplate ONNX export has passed local reference and public-image
-integration checks; weights stay outside Git. See [trained detector setup](docs/TRAINED_DETECTOR.md).
+Recognition quality is not established by software tests or the frontend demo.
+The supplied detector has passed export/runtime integration checks. The labelled
+recognition smoke case is a development example with unknown training overlap,
+not an independent accuracy benchmark. See [recognition and evaluation](docs/RECOGNITION.md)
+and [trained detector setup](docs/TRAINED_DETECTOR.md). Model weights stay outside Git.
 
-A [22-second evidence demo](demos/nameplate-video/README.md) uses Brag and Hyperframes
-to present actual detector/OCR output. Its source is reproducible; the panels are
-a presentation view of the backend workflow.
+The [earlier 22-second demo](demos/nameplate-video/README.md) presents the previous
+plate detector / raw OCR workflow. It does not demonstrate the newer field and
+catalogue checks or visual machine classification.
 
 ## Architecture
 
@@ -44,7 +48,7 @@ flowchart TD
 | Persistence | SQLAlchemy, Alembic; SQLite or PostgreSQL | Registry, immutable records, transactions and audit |
 | Image evidence | Pillow and filesystem storage | Bounded uploads, normalization and protected access |
 | Analysis execution | SQL-backed queue and Python worker | Durable claims, retries and fenced result commits |
-| Vision | YOLO11 ONNX Runtime adapter; Tesseract or optional PaddleOCR | Equipment/nameplate regions and identifier text |
+| Vision | YOLO11 ONNX; local PP-OCRv6/RapidOCR, Tesseract baseline or optional PaddleOCR | Equipment/nameplate regions and identifier text |
 | Knowledge assistance | Lexical retrieval; optional local E5 and Ollama | Applicable excerpts and source-labelled answer drafts |
 | Runtime | Separate API/worker processes; Docker Compose configuration | Shared database, captures and operator-provisioned models |
 
@@ -214,7 +218,7 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently passes 115 tests with one optional artifact check skipped; the supplied
+covers scoped workflows, inference failure isolation and evidence review; the supplied
 artifact was validated separately. Frontend checks cover API transport, stale
 factory responses and explicit confirmation, alongside a TypeScript production
 build. PostgreSQL validation runs in CI. This does not establish industrial detection
@@ -224,7 +228,8 @@ core dependency lock and require their own environment validation.
 PDF draft imports with page citations, persistent passage caching, individual access,
 supervisor review, reviewed link corrections, queue capacity
 limits, bounded lease renewal, cancellation and integrity-checked backup/restore
-are implemented. Remaining work includes deeper client pagination, provisioning/correction screens,
+are implemented. Remaining work includes independent recognition evaluation, machine-appearance
+retrieval, deeper client pagination, provisioning/correction screens,
 SSO, physical identity-field corrections, large-collection vector indexing,
 broader model evaluation, storage retention policy, external monitoring and deployment-specific SSO integration. QR decoding, 3D reconstruction and work-order
 integrations are outside the current implementation.
