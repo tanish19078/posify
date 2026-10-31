@@ -63,7 +63,9 @@ Configuration belongs to the **worker process** performing inference. The API's
 `/v1/runtime` describes the API process and cannot verify a separate worker.
 For local execution, install `requirements-inference.lock`, provision the export
 with `scripts/install_detector.py`, set `POSIFY_DETECTOR_MANIFEST` to its absolute
-manifest path, and set `POSIFY_OCR_ENGINE=tesseract`. Tesseract with English language
+manifest path. For the learned reader run `python scripts/install_ocr_models.py`,
+set `POSIFY_OCR_ENGINE=rapidocr` and `POSIFY_RAPIDOCR_MODEL_DIR` to its absolute
+directory. Alternatively use `POSIFY_OCR_ENGINE=tesseract`; Tesseract with English
 data must be installed and discoverable on the worker's PATH. Use the same Python
 environment, database and capture directory for the API and worker. Restart
 processes after changing environment variables; stored failed jobs stay failed,

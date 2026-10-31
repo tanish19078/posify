@@ -51,7 +51,12 @@ For Compose, set `POSIFY_WITH_DETECTOR=true` and
 `models/` directory is mounted read-only. The supplied Compose configuration has
 not been executed on this development host; Python API/worker processes were tested.
 
-## Public-image smoke results
+## Earlier baseline public-image smoke results
+
+These timings and OCR counts predate `plate-evidence-v1`. They describe the
+original single-crop OCR reader, not the enhanced pipeline. Use the labelled
+recognition evaluator for current reader comparisons; neither set establishes
+independent industrial recognition accuracy.
 
 The pinned public sources, authors, licenses, download URLs and image digests are in
 [the source manifest](../examples/nameplate_sources.json). The images were independently sourced from Commons; no dataset files or
