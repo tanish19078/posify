@@ -16,7 +16,7 @@ def publish(c, model):
 
 def test_factory_registration_and_unknown_factory(client):
     a, _ = setup_records(client)
-    data = {k: v for k, v in a.items() if k != 'id'}
+    data = {k: v for k, v in a.items() if k not in {'id', 'revision'}}
     assert client.post('/v1/assets', json={**data, 'site_id': 'not-registered'}).status_code == 404
     org = client.post('/v1/organizations', json={'name': 'Factory owner'}).json()
     body = {'id': 'plant-c', 'organization_id': org['id'], 'name': 'Plant C'}

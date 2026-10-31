@@ -14,8 +14,9 @@ def test_upgrade_legacy_preserves_data_and_registers_factory(tmp_path):
     with db.connect() as connection:
         assert connection.execute('SELECT tag FROM assets WHERE id=?', ('asset-legacy',)).fetchone()['tag'] == 'P-1'
         factory = connection.execute('SELECT * FROM factories WHERE id=?', ('legacy-plant',)).fetchone()
+        assert connection.execute('SELECT revision FROM assets').fetchone()['revision'] == 1
         assert factory['organization_id'] == '00000000-0000-0000-0000-000000000001'
-        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0004'
+        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0005'
     db.upgrade()
     with db.connect() as connection:
         assert len(connection.execute('SELECT * FROM factories').fetchall()) == 1
@@ -39,5 +40,5 @@ def test_database_rejects_unregistered_factory(tmp_path):
     db = Database(str(tmp_path / 'constraints.db'))
     with pytest.raises(IntegrityError):
         with db.connect() as connection:
-            connection.execute('INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)',
+            connection.execute('INSERT INTO assets (id,site_id,tag,manufacturer,model,serial,category,location) VALUES(?,?,?,?,?,?,?,?)',
                                ('a', 'missing', 'P1', 'Maker', 'M1', None, 'pump', 'Bay'))

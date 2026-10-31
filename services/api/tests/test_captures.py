@@ -179,7 +179,7 @@ def test_capture_assignment_cannot_cross_assets_or_sites(client):
     from test_api import start
     a, p = setup_records(client)
     b, _ = setup_records(client, site='plant-b')
-    second = client.post('/v1/assets', json={**{k: v for k, v in a.items() if k != 'id'},
+    second = client.post('/v1/assets', json={**{k: v for k, v in a.items() if k not in {'id', 'revision'}},
                                           'tag': 'P-105', 'serial': 'S-002'}).json()
     capture = upload(client).json()['capture']
     route = f"/v1/sites/plant-a/captures/{capture['id']}/confirm"

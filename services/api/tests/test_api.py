@@ -86,7 +86,7 @@ def test_identity_never_guesses_from_category(client):
 
 def test_unique_identifiers_and_procedure_versions(client):
     a, p = setup_records(client)
-    assert client.post('/v1/assets', json={k: v for k, v in a.items() if k != 'id'}).status_code == 409
+    assert client.post('/v1/assets', json={k: v for k, v in a.items() if k not in {'id', 'revision'}}).status_code == 409
     assert client.post('/v1/procedures', json={k: v for k, v in p.items() if k != 'id'}).status_code == 409
     assert client.post('/v1/procedures', json={**{k: v for k, v in p.items() if k != 'id'}, 'version': 2}).status_code == 201
 
@@ -150,3 +150,50 @@ def test_duplicate_step_ids_rejected(client):
     body = {k: v for k, v in p.items() if k != 'id'}
     body['steps'] = body['steps'] * 2
     assert client.post('/v1/procedures', json=body).status_code == 422
+
+
+def test_asset_metadata_update_conflict_and_history(client):
+    a, _ = setup_records(client)
+    route = f"/v1/sites/plant-a/assets/{a['id']}"
+    assert a['revision'] == 1
+    body = {'expected_revision': 1, 'reason': 'Moved during layout change', 'location': 'Bay 2'}
+    result = client.patch(route, json=body)
+    assert result.status_code == 200, result.text
+    assert result.json()['revision'] == 2
+    assert result.json()['location'] == 'Bay 2'
+    stale = client.patch(route, json={**body, 'location': 'Bay 3'})
+    assert stale.status_code == 409
+    assert stale.json()['detail']['current_revision'] == 2
+    assert client.get(route).json()['location'] == 'Bay 2'
+    assert client.get('/v1/assets?site_id=plant-a').json()[0]['revision'] == 2
+    assert client.get('/v1/sites/plant-a/pack').json()['assets'][0]['revision'] == 2
+    events = client.get('/v1/sites/plant-a/audit', params={
+        'entity_id': a['id'], 'kind': 'asset.updated'}).json()
+    assert len(events) == 1
+    payload = events[0]['payload']
+    assert payload == {'reason': body['reason'], 'previous_revision': 1, 'revision': 2,
+                       'changes': {'location': {'before': 'Bay 1', 'after': 'Bay 2'}}}
+    assert client.get('/v1/sites/plant-a/audit', params={
+        'entity_id': a['id'], 'after': events[0]['sequence']}).json() == []
+    assert client.get('/v1/sites/plant-b/audit', params={'entity_id': a['id']}).json() == []
+    assert client.get('/v1/sites/plant-a/audit', params={
+        'kind': "asset.updated' OR 1=1 --"}).json() == []
+
+
+def test_asset_metadata_update_scope_validation_and_noop(client):
+    a, _ = setup_records(client)
+    route = f"/v1/sites/plant-a/assets/{a['id']}"
+    body = {'expected_revision': 1, 'reason': 'Review', 'location': 'Bay 1'}
+    assert client.patch(route.replace('plant-a', 'plant-b'), json=body).status_code == 404
+    assert client.get(route.replace('plant-a', 'plant-b')).status_code == 404
+    for invalid in ({'location': None}, {'reason': ' '}, {'expected_revision': 0},
+                    {'tag': 'P-200'}, {'manufacturer': 'Other'}):
+        assert client.patch(route, json={**body, **invalid}).status_code == 422
+    assert client.patch(route, json={'expected_revision': 1, 'reason': 'Empty edit'}).status_code == 422
+    assert client.patch(route, json=body).json()['revision'] == 1
+    assert client.get('/v1/sites/plant-a/audit', params={'kind': 'asset.updated'}).json() == []
+    changed = client.patch(route, json={**body, 'category': 'centrifugal pump'})
+    assert changed.json()['revision'] == 2
+    assert changed.json()['tag'] == a['tag']
+    assert client.patch(route, json={**body, 'expected_revision': 2,
+                                    'category': 'centrifugal pump'}).json()['revision'] == 2
