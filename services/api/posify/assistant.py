@@ -9,6 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 STOP = {'the', 'and', 'what', 'this', 'that', 'with', 'does', 'should', 'have', 'for', 'how'}
 
 
+def source_excerpt(record, offset):
+    kind = record.get('source_kind', 'factory_procedure')
+    return {'id': f"{record['id']}:{offset // 1000}",
+            'procedure_id': record['id'] if kind == 'factory_procedure' else None,
+            'document_id': record['id'] if kind == 'catalog_document' else None,
+            'source_kind': kind, 'source_ref': record.get('source_ref'),
+            'version': record['version'], 'title': record['title'],
+            'excerpt': record['source_text'][offset:offset + 1000]}
+
+
 def retrieve(procedures, question):
     terms = set(re.findall(r'\w{3,}', question.lower())) - STOP
     scored = []
@@ -18,9 +28,7 @@ def retrieve(procedures, question):
             excerpt = text[offset:offset + 1000]
             score = len(terms & set(re.findall(r'\w{3,}', excerpt.lower())))
             if score:
-                scored.append((score, {'id': f"{p['id']}:{offset // 1000}",
-                                      'procedure_id': p['id'], 'version': p['version'],
-                                      'title': p['title'], 'excerpt': excerpt}))
+                scored.append((score, source_excerpt(p, offset)))
     scored.sort(key=lambda x: (-x[0], x[1]['id']))
     return [s for _, s in scored[:4]]
 

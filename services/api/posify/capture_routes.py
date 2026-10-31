@@ -7,6 +7,8 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
+from posify.catalog import require_factory
+from posify.analysis import compute_analysis, save_analysis
 from posify.captures import MAX_UPLOAD, capture_row, persist_image, sanitize_image
 from posify.matching import extract_identifiers, match_identifiers
 from posify.schemas import (Capture, CaptureAnalysis, CaptureReceipt, CaptureConfirm,
@@ -22,6 +24,8 @@ def install_capture_routes(app, database, auth, root):
         return capture_row(row)
 
     def write_capture(raw, media, site_id):
+        with database.connect() as db:
+            require_factory(db, site_id)
         payload, width, height, flags = sanitize_image(raw, media)
         digest = persist_image(root, payload)
         with database.connect() as db:
@@ -72,25 +76,9 @@ def install_capture_routes(app, database, auth, root):
 
     @app.post('/v1/sites/{site_id}/captures/{capture_id}/analyze', response_model=CaptureAnalysis, dependencies=auth)
     def analyze(site_id: str, capture_id: UUID):
+        result = compute_analysis(app, database, root, site_id, capture_id)
         with database.connect() as db:
-            data = lookup(db, capture_id, site_id)
-        image = root / (data['sha256'] + '.png')
-        if not image.is_file():
-            raise HTTPException(410, 'Capture image content is missing')
-        lines = app.state.ocr.recognize(image)
-        if len(lines) > 2000:
-            raise HTTPException(502, 'OCR returned too many lines')
-        identifiers = extract_identifiers(lines)
-        with database.connect() as db:
-            result = dict(id=str(uuid4()), capture_id=str(capture_id),
-                          created_at=datetime.now(timezone.utc).isoformat(), engine=app.state.ocr.engine,
-                          lines=[line.model_dump() for line in lines], identifiers=identifiers,
-                          requires_confirmation=True, **match_identifiers(db, site_id, identifiers))
-            db.execute('INSERT INTO capture_analyses VALUES(?,?,?,?)',
-                       (result['id'], str(capture_id), result['created_at'], json.dumps(result)))
-            db.execute('INSERT INTO audit(site_id,kind,entity_id,created_at,payload) VALUES(?,?,?,?,?)',
-                       (site_id, 'capture.analyzed', result['id'], result['created_at'],
-                        json.dumps({'capture_id': str(capture_id), 'engine': result['engine'], 'status': result['status']})))
+            save_analysis(db, site_id, result)
         return result
 
     @app.get('/v1/sites/{site_id}/captures/{capture_id}/analyses', response_model=list[CaptureAnalysis], dependencies=auth)

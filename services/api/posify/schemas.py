@@ -1,5 +1,6 @@
 from typing import Annotated, Literal
 from uuid import UUID
+from posify.detector import Detection
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -132,7 +133,10 @@ class SitePack(StrictModel):
 
 class SourceExcerpt(StrictModel):
     id: str
-    procedure_id: UUID
+    procedure_id: UUID | None = None
+    document_id: UUID | None = None
+    source_kind: Literal['factory_procedure', 'catalog_document'] = 'factory_procedure'
+    source_ref: str | None = None
     version: int
     title: str
     excerpt: str
@@ -177,6 +181,10 @@ class IdentifierEvidence(StrictModel):
 
 
 class CaptureAnalysis(StrictModel):
+    detections: list[Detection] = Field(default_factory=list)
+    inference_mode: Literal['ocr', 'detect_ocr'] = 'ocr'
+    detector_revision: str | None = None
+    pipeline_warnings: list[str] = Field(default_factory=list)
     id: UUID
     capture_id: UUID
     created_at: str

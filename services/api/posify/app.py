@@ -1,7 +1,7 @@
 import json
 import os
 import secrets
-import sqlite3
+from sqlalchemy.exc import IntegrityError
 from pathlib import Path
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -14,6 +14,9 @@ from posify.database import Database
 from posify.capture_routes import install_capture_routes
 from posify.captures import capture_row
 from posify.ocr import LocalOCR
+from posify.detector import LocalDetector
+from posify.catalog import install_catalog_routes, require_factory
+from posify.jobs import install_job_routes
 from posify.retrieval import HybridRetriever
 from starlette.concurrency import run_in_threadpool
 from posify.schemas import (
@@ -54,11 +57,12 @@ def inspection(db, inspection_id, site):
     return dict(row)
 
 
-def create_app(db_path=None, api_token=None):
+def create_app(db_path=None, api_token=None, database_url=None):
     token = api_token or os.getenv("POSIFY_API_TOKEN")
     if not token or token == "replace-with-a-generated-token":
         raise RuntimeError("Set POSIFY_API_TOKEN to a generated development token")
-    database = Database(db_path or os.getenv("POSIFY_DB", "var/posify.db"))
+    database = Database(db_path or os.getenv("POSIFY_DB", "var/posify.db"),
+                        url=database_url or (os.getenv("POSIFY_DATABASE_URL") if db_path is None else None))
     app = FastAPI(title="Equipment inspection API", version="0.1.0")
     app.state.database = database
     header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -68,9 +72,13 @@ def create_app(db_path=None, api_token=None):
             raise HTTPException(401, "Invalid API key")
 
     auth = [Depends(authorize)]
+    install_catalog_routes(app, database, auth)
+    install_job_routes(app, database, auth)
     app.state.ocr = LocalOCR()
+    app.state.detector = LocalDetector()
     app.state.retriever = HybridRetriever()
     capture_root = Path(os.getenv("POSIFY_CAPTURE_DIR", str(Path(database.path).parent / "captures")))
+    app.state.capture_root = capture_root
     install_capture_routes(app, database, auth, capture_root)
 
     app.state.model_name = os.getenv("POSIFY_OLLAMA_MODEL", "")
@@ -86,7 +94,16 @@ def create_app(db_path=None, api_token=None):
                 "AND p.version=(SELECT MAX(q.version) FROM procedures q WHERE "
                 "q.site_id=p.site_id AND q.manufacturer=p.manufacturer AND q.model=p.model AND q.title=p.title)",
                 (body.site_id, a["manufacturer"], a["model"])).fetchall()
-        sources = await run_in_threadpool(app.state.retriever.search, [dict(r) for r in rows], body.question)
+            global_rows = db.execute(
+                "SELECT d.id,d.title,d.revision AS version,d.source_text,d.source_ref FROM catalog_documents d "
+                "JOIN asset_catalog_links l ON l.catalog_model_id=d.catalog_model_id "
+                "JOIN catalog_models m ON m.id=d.catalog_model_id "
+                "WHERE l.asset_id=? AND d.status='published' AND m.status='published' "
+                "AND d.revision=(SELECT MAX(newer.revision) FROM catalog_documents newer WHERE "
+                "newer.catalog_model_id=d.catalog_model_id AND newer.title=d.title AND newer.status='published')",
+                (a['id'],)).fetchall()
+            knowledge = [dict(r) for r in rows] + [{**dict(r), 'source_kind': 'catalog_document'} for r in global_rows]
+        sources = await run_in_threadpool(app.state.retriever.search, knowledge, body.question)
         result = await explain(sources, body.question, app.state.model_name,
                                app.state.model_url, app.state.model_transport)
         result['retrieval_method'] = 'hybrid_e5' if app.state.retriever.model_path else 'lexical'
@@ -100,8 +117,8 @@ def create_app(db_path=None, api_token=None):
             "retrieval": app.state.retriever.readiness(),
             "assistant": {"runtime": "ollama", "configured": bool(app.state.model_name),
                           "model": app.state.model_name or None, "inference_verified": False},
-            "detector": {"status": "awaiting_external_artifact", "training": "external_colab",
-                         "inference_implemented": False},
+            "detector": app.state.detector.readiness(),
+            "database": {"dialect": database.dialect},
         }
 
     @app.get("/health")
@@ -114,9 +131,10 @@ def create_app(db_path=None, api_token=None):
     def create_asset(body: AssetCreate):
         data = {"id": str(uuid4()), **body.model_dump()}
         with database.connect() as db:
+            require_factory(db, body.site_id)
             try:
                 db.execute("INSERT INTO assets VALUES(:id,:site_id,:tag,:manufacturer,:model,:serial,:category,:location)", data)
-            except sqlite3.IntegrityError:
+            except IntegrityError:
                 raise HTTPException(409, "Asset tag or serial already exists in this site")
             audit(db, body.site_id, "asset.created", data["id"], data)
         return data
@@ -150,9 +168,10 @@ def create_app(db_path=None, api_token=None):
         data = {"id": str(uuid4()), **body.model_dump()}
         stored = {**data, "steps": json.dumps(data["steps"])}
         with database.connect() as db:
+            require_factory(db, body.site_id)
             try:
                 db.execute("INSERT INTO procedures VALUES(:id,:site_id,:manufacturer,:model,:title,:version,:steps,:source_text)", stored)
-            except sqlite3.IntegrityError:
+            except IntegrityError:
                 raise HTTPException(409, "Procedure version already exists; create a new version")
             audit(db, body.site_id, "procedure.created", data["id"], {"version": body.version})
         return data
@@ -202,7 +221,7 @@ def create_app(db_path=None, api_token=None):
                 raise HTTPException(422, "Unknown procedure step")
             try:
                 db.execute("INSERT INTO observations VALUES(:id,:inspection_id,:step_id,:result,:note)", data)
-            except sqlite3.IntegrityError:
+            except IntegrityError:
                 raise HTTPException(409, "A result is already recorded for this step")
             audit(db, body.site_id, "observation.created", data["id"], data)
         return {"replayed": False, "observation": data}

@@ -7,7 +7,7 @@ from threading import Lock
 
 from fastapi import HTTPException
 
-from posify.assistant import retrieve
+from posify.assistant import retrieve, source_excerpt
 
 
 class HybridRetriever:
@@ -37,9 +37,7 @@ class HybridRetriever:
         sources = []
         for p in procedures:
             for offset in range(0, len(p['source_text']), 1000):
-                sources.append(dict(id=f"{p['id']}:{offset // 1000}", procedure_id=p['id'],
-                                    version=p['version'], title=p['title'],
-                                    excerpt=p['source_text'][offset:offset + 1000]))
+                sources.append(source_excerpt(p, offset))
         if len(sources) > 256:
             raise HTTPException(422, 'Local semantic search supports at most 256 chunks; narrow the procedure collection')
         with self._lock:
