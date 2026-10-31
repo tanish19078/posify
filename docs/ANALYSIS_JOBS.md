@@ -52,6 +52,29 @@ Coordinates are remapped to the original image. Empty detections trigger explici
 labelled whole-image OCR. A missing detector is an error, not an OCR-only success.
 The existing synchronous `/analyze` endpoint remains OCR-only for compatibility.
 
+## Unavailable analysis components
+
+Jobs now retain a bounded stage identifier: `detector_http_503` means the detector
+returned an unavailable response; `ocr_http_503` means OCR did. Existing failures
+may still contain `component_http_503`. Neither code includes raw exception
+details, local paths or credentials. Retries remain bounded as before.
+
+Configuration belongs to the **worker process** performing inference. The API's
+`/v1/runtime` describes the API process and cannot verify a separate worker.
+For local execution, install `requirements-inference.lock`, provision the export
+with `scripts/install_detector.py`, set `POSIFY_DETECTOR_MANIFEST` to its absolute
+manifest path, and set `POSIFY_OCR_ENGINE=tesseract`. Tesseract with English language
+data must be installed and discoverable on the worker's PATH. Use the same Python
+environment, database and capture directory for the API and worker. Restart
+processes after changing environment variables; stored failed jobs stay failed,
+so start a new analysis after repairing the configuration.
+
+For Compose, set `POSIFY_WITH_DETECTOR=true`,
+`POSIFY_DETECTOR_MANIFEST=/models/nameplate-v1/manifest.json` and
+`POSIFY_OCR_ENGINE=tesseract`, with the reviewed bundle installed under the mounted
+`models/nameplate-v1` directory. Rebuild/recreate the API and worker images.
+See [trained detector setup](TRAINED_DETECTOR.md) for verification commands.
+
 ## Cancellation
 
 `POST /v1/sites/{site}/jobs/{job}/cancel` requires technician permission. It clears
