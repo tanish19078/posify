@@ -198,7 +198,7 @@ function UploadModal({
           <span>
             {file
               ? `${(file.size / 1024 / 1024).toFixed(2)} MiB · Ready to upload`
-              : "PNG or JPEG · up to 8 MiB"}
+              : "PNG or JPEG · 8 MiB max · 6 MP max · 4096 px per side"}
           </span>
           <input
             aria-label="Choose capture image"
