@@ -20,7 +20,7 @@ from posify.jobs import install_job_routes
 from posify.retrieval import HybridRetriever
 from starlette.concurrency import run_in_threadpool
 from posify.schemas import (
-    AssetCreate, IdentifyRequest, InspectionCreate, ObservationCreate, ProcedureCreate, AssistantRequest,
+    AssetCreate, AssetUpdate, IdentifyRequest, InspectionCreate, ObservationCreate, ProcedureCreate, AssistantRequest,
     Asset, Procedure, IdentityMatch, Inspection, InspectionDetail, ObservationReceipt,
     SubmissionReceipt, SitePack, AssistantResponse,
 )
@@ -133,7 +133,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
         with database.connect() as db:
             require_factory(db, body.site_id)
             try:
-                db.execute("INSERT INTO assets VALUES(:id,:site_id,:tag,:manufacturer,:model,:serial,:category,:location)", data)
+                db.execute("INSERT INTO assets (id,site_id,tag,manufacturer,model,serial,category,location) VALUES(:id,:site_id,:tag,:manufacturer,:model,:serial,:category,:location)", data)
             except IntegrityError:
                 raise HTTPException(409, "Asset tag or serial already exists in this site")
             audit(db, body.site_id, "asset.created", data["id"], data)
@@ -145,6 +145,36 @@ def create_app(db_path=None, api_token=None, database_url=None):
         with database.connect() as db:
             return [dict(r) for r in db.execute(
                 "SELECT * FROM assets WHERE site_id=? ORDER BY id LIMIT ? OFFSET ?", (site_id, limit, offset))]
+
+    @app.get("/v1/sites/{site_id}/assets/{asset_id}", response_model=Asset, dependencies=auth)
+    def get_asset(site_id: str, asset_id: str):
+        with database.connect() as db:
+            return asset(db, asset_id, site_id)
+
+    @app.patch("/v1/sites/{site_id}/assets/{asset_id}", response_model=Asset, dependencies=auth)
+    def update_asset(site_id: str, asset_id: str, body: AssetUpdate):
+        with database.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            current = asset(db, asset_id, site_id)
+            if current["revision"] != body.expected_revision:
+                raise HTTPException(409, {"message": "Asset changed; reload before updating",
+                                          "current_revision": current["revision"]})
+            changes = {name: getattr(body, name) for name in ("location", "category")
+                       if name in body.model_fields_set and getattr(body, name) != current[name]}
+            if not changes:
+                return current
+            updated = {**current, **changes, "revision": current["revision"] + 1}
+            result = db.execute("UPDATE assets SET location=?,category=?,revision=? WHERE id=? AND site_id=? AND revision=?",
+                                (updated["location"], updated["category"], updated["revision"],
+                                 asset_id, site_id, body.expected_revision))
+            if result.rowcount != 1:
+                raise HTTPException(409, "Asset changed; reload before updating")
+            audit(db, site_id, "asset.updated", asset_id,
+                  {"reason": body.reason, "previous_revision": current["revision"],
+                   "revision": updated["revision"],
+                   "changes": {name: {"before": current[name], "after": value}
+                               for name, value in changes.items()}})
+            return updated
 
     @app.post("/v1/identify", response_model=IdentityMatch, dependencies=auth)
     def identify(body: IdentifyRequest):
@@ -261,10 +291,17 @@ def create_app(db_path=None, api_token=None, database_url=None):
                 "captures": captures, "capture_assignments": assignments, "inspection_evidence": evidence}
 
     @app.get("/v1/sites/{site_id}/audit", dependencies=auth)
-    def history(site_id: str, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
+    def history(site_id: str, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500),
+                entity_id: str | None = Query(None, min_length=1, max_length=200),
+                kind: str | None = Query(None, min_length=1, max_length=200)):
+        clauses, args = ["site_id=?", "sequence>?"], [site_id, after]
+        for column, value in (("entity_id", entity_id), ("kind", kind)):
+            if value is not None:
+                clauses.append(column + "=?")
+                args.append(value)
         with database.connect() as db:
-            rows = db.execute("SELECT * FROM audit WHERE site_id=? AND sequence>? ORDER BY sequence LIMIT ?",
-                              (site_id, after, limit)).fetchall()
+            rows = db.execute("SELECT * FROM audit WHERE " + " AND ".join(clauses)
+                              + " ORDER BY sequence LIMIT ?", [*args, limit]).fetchall()
         return [{**dict(r), "payload": json.loads(r["payload"])} for r in rows]
 
     return app

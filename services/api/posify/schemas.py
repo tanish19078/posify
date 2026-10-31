@@ -22,6 +22,21 @@ class AssetCreate(StrictModel):
     location: Text
 
 
+class AssetUpdate(StrictModel):
+    expected_revision: int = Field(ge=1)
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
+    location: Text | None = None
+    category: Text | None = None
+
+    @model_validator(mode="after")
+    def has_change(self):
+        if not self.model_fields_set.intersection({"location", "category"}):
+            raise ValueError("Supply location or category")
+        if any(getattr(self, name) is None for name in self.model_fields_set & {"location", "category"}):
+            raise ValueError("Asset metadata cannot be null")
+        return self
+
+
 class Step(StrictModel):
     id: Text
     instruction: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
@@ -73,6 +88,7 @@ class AssistantRequest(StrictModel):
 
 class Asset(AssetCreate):
     id: UUID
+    revision: int = Field(default=1, ge=1)
 
 
 class Procedure(ProcedureCreate):
