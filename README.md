@@ -81,6 +81,8 @@ API key; individual identities and role/site authorization remain to be implemen
 
 ## Correctness guarantees
 
+- Asset location/category updates require an expected revision and a reason. Stale
+  edits return `409`; successful changes increment the revision and audit before/after values.
 - Observation UUIDs make exact retries safe; changed content under the same ID
   returns `409`. Capture confirmation and evidence attachment also support safe retries.
 - Observations and their audit events commit together. Submitted inspections reject
@@ -182,13 +184,13 @@ pytest -q
 python scripts/export_contracts.py --check
 ```
 
-CI exercises the backend against SQLite and PostgreSQL. Current verification covers
-61 tests per database configuration; it does not establish industrial detection
+CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
+currently covers 63 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
 accuracy, latency or production readiness. Optional model extras are outside the
 core dependency lock and require their own environment validation.
 
 Remaining engineering work includes the web client, individual authentication and
-site/role authorization, reviewed asset/link corrections, supervisor review,
+site/role authorization, reviewed identity/link corrections, supervisor review,
 PDF ingestion, persistent retrieval indexing, model evaluation and operating controls
 for quotas, monitoring, retention and tested backup restoration. Queue heartbeats
 and cancellation are also pending. QR decoding, 3D reconstruction and work-order
