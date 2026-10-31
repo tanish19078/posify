@@ -54,8 +54,12 @@ The default 0.80 semantic cutoff is an unevaluated configurable heuristic.
 
 Only procedures applicable to the requested asset's site/manufacturer/model,
 using the latest revision per title, enter search. At most 256 chunks are accepted
-by semantic search. Passage embeddings are recomputed per request in this first
-implementation; persistent indexing and calibrated evaluation remain future work.
+by semantic search. Passage embeddings are cached persistently in the application database. The cache
+namespace hashes the local model artifact files and encoder version; each passage
+is keyed by its content hash. Keep the model directory immutable while a process
+is running. Queries are always encoded afresh, and only already scoped source
+passages enter ranking. This is bounded exact search, not an ANN vector index.
+Calibrated retrieval evaluation and large-collection indexing remain future work.
 A retrieval query is not automatically pinned to a particular inspection revision;
 inspection execution still uses its immutable procedure ID.
 

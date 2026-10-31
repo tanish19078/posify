@@ -2,9 +2,9 @@
 
 ## Persistence
 
-SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0007
+SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0008
 adopt the original schema, add catalogue/factory ownership, add durable jobs and
-enforce factory references, add asset revisions and persist identity/review records. SQLite remains the default for local development;
+enforce factory references, add asset revisions and persist identity/review records, page-level PDF sources and cached embeddings. SQLite remains the default for local development;
 PostgreSQL is configured with `POSIFY_DATABASE_URL`. No SQL is assembled from user
 values. The compatibility layer translates only fixed positional placeholders.
 
@@ -80,7 +80,7 @@ reachable runtime URL before enabling the model. No model is pulled automaticall
 The container configuration is supplied but was not run in this development host,
 which does not have Docker. CI separately verifies the PostgreSQL code paths.
 
-Back up the database and capture volume together and rehearse restoration. Do not
+Back up the database, capture volume and original-document volume together and rehearse restoration. Do not
 run destructive downgrades; migrations deliberately require a reviewed backup/restore
 plan for rollback. TLS, managed secrets, monitoring, storage quotas and retention policies remain
 deployment work; analysis queue capacity is bounded separately.

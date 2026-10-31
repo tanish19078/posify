@@ -33,8 +33,11 @@ A worker atomically claims a job, increments attempts and obtains a fencing toke
 with a default 300-second lease. Inference runs outside the database transaction.
 Only the current unexpired claimant can publish an analysis and completed job in
 one transaction. Crashed workers leave reclaimable jobs; stale results are discarded.
-No per-job heartbeat is implemented. Configure the lease above measured job duration
-and supervise/terminate hung worker processes separately.
+A heartbeat renews the current unexpired claim every third of the lease duration.
+Renewal stops after `POSIFY_JOB_DEADLINE_SECONDS` (default 1800) or loss of ownership.
+Results arriving after that deadline are discarded/failed, and expired claims remain
+reclaimable. Renewal does not resurrect expired/cancelled claims. Supervise and
+terminate hung native worker processes separately; heartbeats are not process isolation.
 
 Transient component failures retry up to three attempts with bounded exponential
 backoff. Invalid/missing input fails without retry. A failed job remains failed;
