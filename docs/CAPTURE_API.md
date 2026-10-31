@@ -1,7 +1,7 @@
 # Capture and inspection evidence API
 
-All calls require `X-API-Key`. Shared-token development access is instance-wide;
-site filters are not a substitute for per-user site authorization.
+All calls require an individual bearer token or the development bootstrap key.
+Factory roles apply to individual users; see [access rules](ACCESS_AND_REVIEW.md).
 
 Register an organization/factory before uploading. See [database and ownership](DATABASE.md).
 
@@ -48,8 +48,8 @@ Content-Type: application/json
 
 A technician may confirm a known asset manually even if OCR abstains. Confirmation
 requires the capture and asset to belong to the same site. Exact retries return the
-same assignment; changing the asset returns 409. Assignment correction/review is
-not implemented yet.
+same assignment; changing the asset returns 409. A manager can request an independently reviewed correction for an unattached
+capture. Captures already attached to any inspection cannot be reassigned.
 
 Create an inspection through `/v1/inspections`, then attach:
 

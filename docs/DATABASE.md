@@ -2,9 +2,9 @@
 
 ## Persistence
 
-SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0005
+SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0007
 adopt the original schema, add catalogue/factory ownership, add durable jobs and
-enforce factory references and add asset revision counters. SQLite remains the default for local development;
+enforce factory references, add asset revisions and persist identity/review records. SQLite remains the default for local development;
 PostgreSQL is configured with `POSIFY_DATABASE_URL`. No SQL is assembled from user
 values. The compatibility layer translates only fixed positional placeholders.
 
@@ -37,10 +37,10 @@ orphan writes. Legacy SQLite tables use equivalent reference triggers to avoid
 rebuilding evidence-bearing tables during migration.
 
 The source reference is supplied provenance, not automatic manufacturer verification.
-Publication is a deliberate operator action. The instance API token currently grants
-administrative access to all factories/catalogue records. Organization relationships
-and site filtering DO NOT implement user-level tenant authorization. OIDC, role
-checks and catalogue curator permissions remain required before multi-user deployment.
+Publication requires a global curator or administrator. Factory memberships enforce
+role-based access for individual bearer credentials; the development bootstrap key
+retains administrative access. Switch to `POSIFY_AUTH_MODE=users` to disable that
+key. See [identity and review](ACCESS_AND_REVIEW.md) for provisioning and role rules.
 Variant applicability is manually confirmed; the service checks manufacturer/model
 agreement and does not infer hardware or firmware configuration.
 
@@ -56,8 +56,9 @@ agreement and does not infer hardware or firmware configuration.
 
 Site-pack v2 retains its existing local inspection/capture contract. Catalogue
 models and global documents are retrieved through their APIs and are not embedded
-in that pack yet. Location/category editing is revision-checked; reviewed identity and link corrections
-are not implemented.
+in that pack yet. Location/category editing is revision-checked. Catalogue-link and unattached-capture
+corrections require independent review; physical identity-field corrections remain pending.
+Review/correction records are read through their APIs and are not included in site packs.
 
 ## Local PostgreSQL / worker stack
 
@@ -81,8 +82,8 @@ which does not have Docker. CI separately verifies the PostgreSQL code paths.
 
 Back up the database and capture volume together and rehearse restoration. Do not
 run destructive downgrades; migrations deliberately require a reviewed backup/restore
-plan for rollback. TLS, managed secrets, individual identities, quotas, monitoring
-and retention policies remain deployment work.
+plan for rollback. TLS, managed secrets, monitoring, storage quotas and retention policies remain
+deployment work; analysis queue capacity is bounded separately.
 
 ## Installed asset metadata updates
 
@@ -107,6 +108,6 @@ Existing assets receive revision 1 during migration 0005.
 Audit queries support exact `entity_id` and `kind` filters alongside the existing
 `after` sequence cursor and `limit`. For example, use
 `/v1/sites/plant-a/audit?entity_id={asset}&kind=asset.updated` for metadata changes.
-This records instance-key actions; it does not attribute them to an authenticated
-individual. Historical captures and submitted inspection observations are preserved;
+New audit events distinguish `user`, `bootstrap`, `operator` and `system` actors;
+individual requests include `actor_id`. Pre-migration rows remain `legacy`. Historical captures and submitted inspection observations are preserved;
 asset metadata in registry reads and site packs reflects the current value.

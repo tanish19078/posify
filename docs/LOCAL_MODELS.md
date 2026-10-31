@@ -17,7 +17,7 @@ or language model, and never treats a missing component as a successful inferenc
 | QR decoding | No | OCR reads explicit printed labels only |
 | Mobile/3D | No | No on-phone inference claims |
 
-`GET /v1/runtime` requires the instance API key. It reports configuration and
+`GET /v1/runtime` requires a global administrator credential (or the development bootstrap key). It reports configuration and
 artifact availability, not a benchmark or a guarantee of successful inference.
 
 ## OCR

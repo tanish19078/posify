@@ -17,9 +17,9 @@ Content-Type: application/json
 202 returns the persistent job. Exact ID replays return the same job; changed
 capture, factory or mode returns 409. GET `/v1/sites/{site}/jobs/{id}` reports
 queued/running/succeeded/failed status, attempts and a typed analysis result.
-GET `/v1/sites/{site}/jobs` lists recent records. The site filter is not user RBAC.
+GET `/v1/sites/{site}/jobs` lists recent records. Individual credentials require membership in the requested factory.
 
-Run the worker with the same database, capture root, API token and model environment:
+Run the worker with the same database, capture root, authentication mode and model environment:
 
 ```bash
 python -m posify.worker
@@ -40,11 +40,20 @@ Transient component failures retry up to three attempts with bounded exponential
 backoff. Invalid/missing input fails without retry. A failed job remains failed;
 submit a new UUID for an intentional retry after fixing the component. Claims,
 reclaims, results and exhaustion are auditable. Public responses do not contain
-worker claim tokens or raw exception traces. Queue quotas, cancellation and job
-retention are not implemented.
+worker claim tokens or raw exception traces. Outstanding jobs are bounded per factory by `POSIFY_QUEUE_LIMIT` (default 100).
+New jobs over capacity return 429; exact retries remain safe. Job retention is pending.
 
 `detect_ocr` runs the configured detector, then OCR on up to eight regions.
 Nameplate/label detections take priority; otherwise equipment regions are used.
 Coordinates are remapped to the original image. Empty detections trigger explicitly
 labelled whole-image OCR. A missing detector is an error, not an OCR-only success.
 The existing synchronous `/analyze` endpoint remains OCR-only for compatibility.
+
+## Cancellation
+
+`POST /v1/sites/{site}/jobs/{job}/cancel` requires technician permission. It clears
+the claim and records terminal `status=failed`, `error_code=cancelled_by_user`.
+Repeated cancellation is safe. Completed successes and other failures return 409.
+Cancellation fences any in-flight result; it does not terminate native inference
+already running in the worker process. No analysis is saved by a cancelled claim.
+The synchronous OCR compatibility endpoint does not use the queue capacity limit.
