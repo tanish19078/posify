@@ -1,0 +1,38 @@
+[
+  {
+    "id": "electrolux",
+    "page": "https://commons.wikimedia.org/wiki/File:Motor_Nameplate.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Motor_Nameplate.jpg",
+    "author": "tony_duell",
+    "license": "CC BY 2.0",
+    "license_url": "https://creativecommons.org/licenses/by/2.0/",
+    "sha256": "3e1d9520af96ee9a9b7937a12e08e82a25297b8f305715ae708408a5dc108a4c"
+  },
+  {
+    "id": "current-transformer",
+    "page": "https://commons.wikimedia.org/wiki/File:Nameplate_of_a_CT.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/1/19/Nameplate_of_a_CT.jpg",
+    "author": "SAM31416",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sha256": "da2d532285bd75a4d8a57cba00b9cf390186fb2175545e04be91d34a3924f197"
+  },
+  {
+    "id": "malmbergs",
+    "page": "https://commons.wikimedia.org/wiki/File:Motor_nameplate_Malmbergs.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Motor_nameplate_Malmbergs.jpg",
+    "author": "Olgailga2",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "eef378946ba1049296ef94dcb0d7db8fd4a67652b08e4bf35c9f91767edda15b"
+  },
+  {
+    "id": "westinghouse",
+    "page": "https://commons.wikimedia.org/wiki/File:Nameplate_for_one_of_Fireboat_Firefighter_%27s_600V_DC_Marine_Motors.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Nameplate_for_one_of_Fireboat_Firefighter_%27s_600V_DC_Marine_Motors.jpg",
+    "author": "Kaylee La Spisa",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sha256": "c1ec4d9d65621fda96040019ad4583d5a104efb1e4e99794048c472e2a920ad6"
+  }
+]
