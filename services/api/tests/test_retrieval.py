@@ -52,3 +52,56 @@ def test_invalid_score_setting_rejected(monkeypatch, value):
     monkeypatch.setenv('POSIFY_EMBEDDING_MIN_SCORE', value)
     with pytest.raises(RuntimeError):
         HybridRetriever()
+
+
+def test_passage_cache_survives_retriever_restart_and_model_change(client, tmp_path, monkeypatch):
+    model_dir = tmp_path / 'encoder-artifacts'
+    model_dir.mkdir()
+    artifact = model_dir / 'weights.bin'
+    artifact.write_bytes(b'revision-one')
+    monkeypatch.setenv('POSIFY_EMBEDDING_DIR', str(model_dir))
+    calls = []
+    class Encoder:
+        def encode(self, texts, **kwargs):
+            calls.append(texts)
+            return [[1.0, 0.0] for _ in texts]
+    def retriever():
+        r = HybridRetriever(database=client.app.state.database)
+        r._model = Encoder()
+        r.readiness = lambda: {'artifact_present': True, 'dependency_present': True}
+        return r
+    sources = [dict(id='first', source_text='Oscillation reference', version=1, title='First')]
+    first = retriever()
+    first.search(sources, 'vibration')
+    assert calls[-1] == ['query: vibration', 'passage: Oscillation reference']
+    second = retriever()
+    # Same passage vector, but the returned identity comes from this request's scoped source.
+    result = second.search([{**sources[0], 'id': 'other-factory-source'}], 'vibration')
+    assert calls[-1] == ['query: vibration']
+    assert result[0]['procedure_id'] == 'other-factory-source'
+    artifact.write_bytes(b'revision-two')
+    third = retriever()
+    third.search(sources, 'vibration')
+    assert calls[-1] == ['query: vibration', 'passage: Oscillation reference']
+    assert first._namespace != third._namespace
+
+
+def test_corrupt_cached_vector_is_recomputed(client, tmp_path, monkeypatch):
+    import hashlib
+    monkeypatch.setenv('POSIFY_EMBEDDING_DIR', str(tmp_path / 'model'))
+    (tmp_path / 'model').mkdir()
+    r = HybridRetriever(database=client.app.state.database)
+    r.readiness = lambda: {'artifact_present': True, 'dependency_present': True}
+    calls = []
+    class Encoder:
+        def encode(self, texts, **kwargs):
+            calls.append(texts)
+            return [[1.0, 0.0] for _ in texts]
+    r._model = Encoder()
+    source = dict(id='one', source_text='Oscillation', version=1, title='One')
+    namespace = r._cache_namespace()
+    digest = hashlib.sha256(b'Oscillation').hexdigest()
+    with client.app.state.database.connect() as db:
+        db.execute('INSERT INTO embedding_cache VALUES(?,?,?)', (namespace, digest, '[0,0,1]'))
+    assert r.search([source], 'vibration')[0]['procedure_id'] == 'one'
+    assert calls[-1] == ['passage: Oscillation']

@@ -18,7 +18,7 @@ def test_upgrade_legacy_preserves_data_and_registers_factory(tmp_path):
         factory = connection.execute('SELECT * FROM factories WHERE id=?', ('legacy-plant',)).fetchone()
         assert connection.execute('SELECT revision FROM assets').fetchone()['revision'] == 1
         assert factory['organization_id'] == '00000000-0000-0000-0000-000000000001'
-        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0007'
+        assert connection.execute('SELECT version_num FROM alembic_version').fetchone()['version_num'] == '0008'
         legacy_event = connection.execute('SELECT * FROM audit').fetchone()
         assert legacy_event['actor_type'] == 'legacy' and legacy_event['actor_id'] is None
         assert legacy_event['entity_id'] == 'asset-legacy'

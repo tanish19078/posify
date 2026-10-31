@@ -134,3 +134,43 @@ def test_queue_limit_replays_and_capacity_recovery(tmp_path, monkeypatch):
         assert c.post(f"/v1/sites/plant-a/jobs/{job_id}/cancel").status_code == 200
         assert enqueue(c, capture).status_code == 202
     c.app.state.database.engine.dispose()
+
+
+def test_expired_or_cancelled_claim_cannot_be_renewed(client):
+    from posify.jobs import renew_claim
+    capture = upload(client).json()['capture']
+    job = enqueue(client, capture).json()
+    claim = claim_job(client.app.state.database)
+    assert renew_claim(client.app.state.database, claim, 300)
+    assert client.post(f"/v1/sites/plant-a/jobs/{job['id']}/cancel").status_code == 200
+    assert not renew_claim(client.app.state.database, claim, 300)
+    enqueue(client, capture)
+    expired = claim_job(client.app.state.database)
+    with client.app.state.database.connect() as db:
+        db.execute('UPDATE analysis_jobs SET lease_until=0 WHERE id=?', (expired['id'],))
+    assert not renew_claim(client.app.state.database, expired, 300)
+
+
+def test_worker_renews_lease_while_inference_is_running(client):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    capture = upload(client).json()['capture']
+    job = enqueue(client, capture).json()
+    entered, release = Event(), Event()
+    class SlowOCR:
+        engine = 'controlled-slow-ocr'
+        def recognize(self, path):
+            entered.set()
+            assert release.wait(5)
+            return []
+    client.app.state.ocr = SlowOCR()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        running = pool.submit(work_once, client.app, 1)
+        try:
+            assert entered.wait(3)
+            assert not release.wait(1.3)
+            assert claim_job(client.app.state.database) is None
+        finally:
+            release.set()
+        assert running.result(timeout=3)
+    assert client.get(f"/v1/sites/plant-a/jobs/{job['id']}").json()['status'] == 'succeeded'

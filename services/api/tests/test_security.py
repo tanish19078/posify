@@ -181,3 +181,10 @@ def test_provisioning_cli_private_file_and_existing_output_rollback(tmp_path):
         assert session.execute('SELECT actor_type FROM audit').fetchone()['actor_type'] == 'operator'
     db.engine.dispose()
     assert credential['token'].startswith('psf_')
+
+
+def test_operator_summary_is_administrator_only(client):
+    assert client.get('/v1/operations').json()['pending_reviews'] == 0
+    _, token = person(client, 'manager')
+    with as_person(client, token):
+        assert client.get('/v1/operations').status_code == 403
