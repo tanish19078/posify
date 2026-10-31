@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Query
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -63,6 +63,21 @@ def install_capture_routes(app, database, auth, root):
     def capture_metadata(site_id: str, capture_id: UUID):
         with database.connect() as db:
             return lookup(db, capture_id, site_id)
+
+    @app.get('/v1/sites/{site_id}/captures', response_model=list[Capture], dependencies=auth)
+    def list_captures(site_id: str, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+        with database.connect() as db:
+            require_factory(db, site_id)
+            return [capture_row(row) for row in db.execute(
+                'SELECT * FROM captures WHERE site_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+                (site_id, limit, offset))]
+
+    @app.get('/v1/sites/{site_id}/captures/{capture_id}/confirm', response_model=CaptureAssignment | None, dependencies=auth)
+    def assignment(site_id: str, capture_id: UUID):
+        with database.connect() as db:
+            lookup(db, capture_id, site_id)
+            row = db.execute('SELECT * FROM capture_assignments WHERE capture_id=?', (str(capture_id),)).fetchone()
+            return dict(row) if row else None
 
     @app.get('/v1/sites/{site_id}/captures/{capture_id}/image', dependencies=auth)
     def capture_image(site_id: str, capture_id: UUID):

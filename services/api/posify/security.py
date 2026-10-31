@@ -19,6 +19,7 @@ SITE_PERMISSIONS = {
     ('POST', '/v1/procedures'): 'manager', ('POST', '/v1/identify'): 'viewer',
     ('POST', '/v1/assistant/query'): 'viewer',
     ('GET', '/v1/inspections'): 'viewer', ('POST', '/v1/inspections'): 'technician',
+    ('GET', '/v1/procedures'): 'viewer',
     ('GET', '/v1/inspections/{inspection_id}'): 'viewer',
     ('POST', '/v1/inspections/{inspection_id}/observations'): 'technician',
     ('POST', '/v1/inspections/{inspection_id}/submit'): 'technician',
@@ -27,6 +28,7 @@ for method, suffix, role in [
     ('GET', '/assets/{asset_id}', 'viewer'), ('PATCH', '/assets/{asset_id}', 'manager'),
     ('GET', '/pack', 'viewer'), ('GET', '/audit', 'viewer'),
     ('POST', '/captures', 'technician'), ('GET', '/captures/{capture_id}', 'viewer'),
+    ('GET', '/captures', 'viewer'), ('GET', '/captures/{capture_id}/confirm', 'viewer'),
     ('GET', '/captures/{capture_id}/image', 'viewer'),
     ('POST', '/captures/{capture_id}/analyze', 'technician'),
     ('GET', '/captures/{capture_id}/analyses', 'viewer'),
@@ -118,7 +120,7 @@ def issue_token(db, user_id, days):
 def enforce_policy(request, who, database, body=None):
     """Unknown routes and global administration are denied to ordinary members."""
     route, method = request.scope['route'].path, request.method
-    if (method, route) == ('GET', '/v1/me'):
+    if method == 'GET' and route in {'/v1/me', '/v1/workspaces'}:
         return
     if who['is_admin']:
         return
@@ -189,6 +191,17 @@ def authorization(database, bootstrap_token, mode):
 
 
 def install_security_routes(app, database, auth):
+    @app.get('/v1/workspaces', dependencies=auth)
+    def workspaces(request: Request, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0)):
+        who = request.state.principal
+        with database.connect() as db:
+            if who['is_admin']:
+                rows = db.execute('SELECT * FROM factories ORDER BY name,id LIMIT ? OFFSET ?', (limit, offset))
+            else:
+                rows = db.execute('SELECT f.* FROM factories f JOIN factory_memberships m ON m.site_id=f.id '
+                                  'WHERE m.user_id=? ORDER BY f.name,f.id LIMIT ? OFFSET ?', (who['id'], limit, offset))
+            return [dict(row) for row in rows]
+
     @app.get('/v1/me', dependencies=auth)
     def me(request: Request):
         who = request.state.principal

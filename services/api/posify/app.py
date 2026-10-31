@@ -210,6 +210,15 @@ def create_app(db_path=None, api_token=None, database_url=None):
         return {"status": "candidate_found" if rows else "no_match", "requires_confirmation": True,
                 "basis": "exact_supplied_identifiers", "candidates": [dict(r) for r in rows]}
 
+    @app.get('/v1/procedures', response_model=list[Procedure], dependencies=auth)
+    def list_procedures(site_id: str = Query(min_length=1), limit: int = Query(100, ge=1, le=200),
+                        offset: int = Query(0, ge=0)):
+        with database.connect() as db:
+            require_factory(db, site_id)
+            return [decode(row) for row in db.execute(
+                'SELECT * FROM procedures WHERE site_id=? ORDER BY title,version DESC,id LIMIT ? OFFSET ?',
+                (site_id, limit, offset))]
+
     @app.post("/v1/procedures", status_code=201, response_model=Procedure, dependencies=auth)
     def create_procedure(body: ProcedureCreate):
         data = {"id": str(uuid4()), **body.model_dump()}
