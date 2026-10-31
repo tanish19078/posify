@@ -2,9 +2,9 @@
 
 ## Persistence
 
-SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0004
+SQLAlchemy manages connections and parameter binding. Alembic revisions 0001–0005
 adopt the original schema, add catalogue/factory ownership, add durable jobs and
-enforce factory references. SQLite remains the default for local development;
+enforce factory references and add asset revision counters. SQLite remains the default for local development;
 PostgreSQL is configured with `POSIFY_DATABASE_URL`. No SQL is assembled from user
 values. The compatibility layer translates only fixed positional placeholders.
 
@@ -56,7 +56,8 @@ agreement and does not infer hardware or firmware configuration.
 
 Site-pack v2 retains its existing local inspection/capture contract. Catalogue
 models and global documents are retrieved through their APIs and are not embedded
-in that pack yet. Asset editing and reviewed link corrections are not implemented.
+in that pack yet. Location/category editing is revision-checked; reviewed identity and link corrections
+are not implemented.
 
 ## Local PostgreSQL / worker stack
 
@@ -82,3 +83,30 @@ Back up the database and capture volume together and rehearse restoration. Do no
 run destructive downgrades; migrations deliberately require a reviewed backup/restore
 plan for rollback. TLS, managed secrets, individual identities, quotas, monitoring
 and retention policies remain deployment work.
+
+## Installed asset metadata updates
+
+`GET /v1/sites/{site}/assets/{asset}` returns the current asset, including `revision`.
+Use that revision when changing location or category:
+
+```http
+PATCH /v1/sites/plant-a/assets/{asset}
+X-API-Key: <instance token>
+Content-Type: application/json
+
+{"expected_revision":1,"reason":"Relocated during layout change","location":"Bay 2"}
+```
+
+A successful change increments the revision and records the reason plus before/after
+values in the same transaction. A stale revision returns 409 with the current
+revision; reload and review before resubmitting. An unchanged request at the current
+revision is a no-op. Retrying a completed change with its old revision returns 409.
+Tag, serial, manufacturer, model and factory cannot be changed through this route.
+Existing assets receive revision 1 during migration 0005.
+
+Audit queries support exact `entity_id` and `kind` filters alongside the existing
+`after` sequence cursor and `limit`. For example, use
+`/v1/sites/plant-a/audit?entity_id={asset}&kind=asset.updated` for metadata changes.
+This records instance-key actions; it does not attribute them to an authenticated
+individual. Historical captures and submitted inspection observations are preserved;
+asset metadata in registry reads and site packs reflects the current value.
