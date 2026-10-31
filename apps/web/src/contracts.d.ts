@@ -969,6 +969,15 @@ export interface components {
             detector_revision?: string | null;
             /** Engine */
             engine: string;
+            /** Equipment Candidates */
+            equipment_candidates?: components["schemas"]["EquipmentCandidate"][];
+            /** Equipment Fields */
+            equipment_fields?: components["schemas"]["EquipmentField"][];
+            /**
+             * Equipment Status
+             * @default not_evaluated
+             */
+            equipment_status: string;
             /**
              * Id
              * Format: uuid
@@ -986,6 +995,10 @@ export interface components {
             lines: components["schemas"]["OCRLineResponse"][];
             /** Pipeline Warnings */
             pipeline_warnings?: string[];
+            /** Reading Attempts */
+            reading_attempts?: components["schemas"]["ReadingAttempt"][];
+            /** Recognition Version */
+            recognition_version?: string | null;
             /** Requires Confirmation */
             requires_confirmation: boolean;
             /**
@@ -1230,6 +1243,90 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** EquipmentCandidate */
+        EquipmentCandidate: {
+            /**
+             * Catalog Model Id
+             * Format: uuid
+             */
+            catalog_model_id: string;
+            /** Category */
+            category: string;
+            /** Conflicting Fields */
+            conflicting_fields: string[];
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Manufacturer */
+            manufacturer: string;
+            /** Matched Fields */
+            matched_fields: string[];
+            /** Missing Fields */
+            missing_fields: string[];
+            /** Model */
+            model: string;
+            /**
+             * Requires Review
+             * @default true
+             */
+            requires_review: boolean;
+            /**
+             * Retrieval Basis
+             * @enum {string}
+             */
+            retrieval_basis: "exact_model" | "approximate_model" | "manufacturer_only";
+            /** Source Ref */
+            source_ref: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "evidence_supported" | "partial_evidence" | "conflicting_evidence";
+            /** Variant */
+            variant: string;
+        };
+        /** EquipmentField */
+        EquipmentField: {
+            /** Attempt Id */
+            attempt_id: string;
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "explicit_label" | "catalogue_vocabulary" | "header_candidate" | "code_candidate" | "unit_pattern";
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ] | null;
+            /** Corroborating Attempts */
+            corroborating_attempts?: string[];
+            /**
+             * Field
+             * @enum {string}
+             */
+            field: "manufacturer" | "model" | "serial" | "asset_tag" | "voltage" | "power" | "speed" | "frequency" | "frame";
+            /** Id */
+            id: string;
+            /** Line Index */
+            line_index: number;
+            /** Ocr Confidence */
+            ocr_confidence: number;
+            /** Raw Text */
+            raw_text: string;
+            /** Region Index */
+            region_index: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "observed" | "low_confidence" | "conflicting";
+            /** Unit */
+            unit?: string | null;
+            /** Value */
+            value: string;
+        };
         /** EvidenceAttach */
         EvidenceAttach: {
             /**
@@ -1437,10 +1534,42 @@ export interface components {
              */
             role: "viewer" | "technician" | "supervisor" | "manager";
         };
+        /** OCRLine */
+        OCRLine: {
+            /** Box */
+            box?: [
+                number,
+                number,
+                number,
+                number
+            ] | null;
+            /** Confidence */
+            confidence: number;
+            /** Text */
+            text: string;
+            /** Words */
+            words?: components["schemas"]["OCRWord"][];
+        };
         /** OCRLineResponse */
         OCRLineResponse: {
             /** Box */
             box: [
+                number,
+                number,
+                number,
+                number
+            ] | null;
+            /** Confidence */
+            confidence: number;
+            /** Text */
+            text: string;
+            /** Words */
+            words?: components["schemas"]["OCRWord"][];
+        };
+        /** OCRWord */
+        OCRWord: {
+            /** Box */
+            box?: [
                 number,
                 number,
                 number,
@@ -1566,6 +1695,38 @@ export interface components {
             title: string;
             /** Version */
             version: number;
+        };
+        /** ReadingAttempt */
+        ReadingAttempt: {
+            /** Id */
+            id: string;
+            /** Lines */
+            lines?: components["schemas"]["OCRLine"][];
+            /** Method */
+            method: string;
+            /** Psm */
+            psm: number | null;
+            /**
+             * Quality Score
+             * @default 0
+             */
+            quality_score: number;
+            /** Region Index */
+            region_index: number;
+            /** Rotation */
+            rotation: number;
+            /**
+             * Selected
+             * @default false
+             */
+            selected: boolean;
+            /** Source Quad */
+            source_quad?: [
+                number,
+                number
+            ][];
+            /** Warnings */
+            warnings?: string[];
         };
         /** Review */
         Review: {

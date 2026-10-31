@@ -1,0 +1,1113 @@
+{
+  "recognition_version": "plate-evidence-v1",
+  "equipment_fields": [
+    {
+      "id": "field-1",
+      "field": "manufacturer",
+      "value": "SIEMENS",
+      "unit": null,
+      "raw_text": "SIEMENS",
+      "attempt_id": "region-0-pass-0",
+      "region_index": 0,
+      "line_index": 0,
+      "box": [
+        938,
+        50,
+        1178,
+        79
+      ],
+      "ocr_confidence": 0.99992,
+      "basis": "catalogue_vocabulary",
+      "status": "observed",
+      "corroborating_attempts": [
+        "region-0-pass-0",
+        "region-0-pass-1"
+      ]
+    },
+    {
+      "id": "field-6",
+      "field": "model",
+      "value": "1HU3054-0AC01-Z",
+      "unit": null,
+      "raw_text": "=Perm-Magn-Mot.1HU3054-0AC01-Z",
+      "attempt_id": "region-0-pass-1",
+      "region_index": 0,
+      "line_index": 1,
+      "box": [
+        810,
+        84,
+        1222,
+        104
+      ],
+      "ocr_confidence": 0.99372,
+      "basis": "code_candidate",
+      "status": "observed",
+      "corroborating_attempts": [
+        "region-0-pass-0",
+        "region-0-pass-1"
+      ]
+    }
+  ],
+  "equipment_candidates": [
+    {
+      "catalog_model_id": "8e676da5-52b9-4dfb-8c84-2a76f075fb21",
+      "manufacturer": "SIEMENS",
+      "model": "1HU3054-0AC01-Z",
+      "variant": "base",
+      "category": "Permanent-magnet DC motor",
+      "source_ref": "Photo transcription: Oliver Wallscheid, CC BY 4.0; demo reference only",
+      "status": "evidence_supported",
+      "matched_fields": [
+        "manufacturer",
+        "model"
+      ],
+      "missing_fields": [],
+      "conflicting_fields": [],
+      "evidence_ids": [
+        "field-1",
+        "field-6"
+      ],
+      "retrieval_basis": "exact_model",
+      "requires_review": true
+    },
+    {
+      "catalog_model_id": "43d2b6c8-f1b1-4187-bc40-0c5c10647485",
+      "manufacturer": "SIEMENS",
+      "model": "1HU3054-0AC02-Z",
+      "variant": "base",
+      "category": "Synthetic distractor",
+      "source_ref": "Synthetic near-code distractor for evaluation; not an asserted real model",
+      "status": "conflicting_evidence",
+      "matched_fields": [
+        "manufacturer"
+      ],
+      "missing_fields": [
+        "model"
+      ],
+      "conflicting_fields": [
+        "model"
+      ],
+      "evidence_ids": [
+        "field-1",
+        "field-6"
+      ],
+      "retrieval_basis": "approximate_model",
+      "requires_review": true
+    }
+  ],
+  "equipment_status": "supported_model_candidate",
+  "reading_attempts": [
+    {
+      "id": "region-0-pass-0",
+      "region_index": 0,
+      "method": "original",
+      "rotation": 0,
+      "psm": 6,
+      "selected": true,
+      "quality_score": 0.956422,
+      "source_quad": [
+        [
+          747.0,
+          33.0
+        ],
+        [
+          1346.0,
+          33.0
+        ],
+        [
+          1346.0,
+          263.0
+        ],
+        [
+          747.0,
+          263.0
+        ]
+      ],
+      "lines": [
+        {
+          "text": "SIEMENS",
+          "confidence": 0.99992,
+          "box": [
+            938,
+            50,
+            1178,
+            79
+          ],
+          "words": []
+        },
+        {
+          "text": "=Perm-Magn.-Mot.1 HU3054-0AC01-Z",
+          "confidence": 0.97034,
+          "box": [
+            812,
+            84,
+            1222,
+            103
+          ],
+          "words": []
+        },
+        {
+          "text": "IEC56",
+          "confidence": 0.99009,
+          "box": [
+            789,
+            101,
+            850,
+            117
+          ],
+          "words": []
+        },
+        {
+          "text": "NrE7E82 4058 01 001",
+          "confidence": 0.95373,
+          "box": [
+            904,
+            100,
+            1143,
+            117
+          ],
+          "words": []
+        },
+        {
+          "text": "1/min",
+          "confidence": 0.93889,
+          "box": [
+            938,
+            114,
+            992,
+            132
+          ],
+          "words": []
+        },
+        {
+          "text": "A",
+          "confidence": 0.9991,
+          "box": [
+            1058,
+            115,
+            1080,
+            131
+          ],
+          "words": []
+        },
+        {
+          "text": "kW",
+          "confidence": 0.93826,
+          "box": [
+            1158,
+            113,
+            1195,
+            131
+          ],
+          "words": []
+        },
+        {
+          "text": "174",
+          "confidence": 0.99125,
+          "box": [
+            812,
+            128,
+            846,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "2000",
+          "confidence": 0.99998,
+          "box": [
+            936,
+            129,
+            983,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "2,8",
+          "confidence": 0.92004,
+          "box": [
+            1055,
+            129,
+            1084,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "0.38",
+          "confidence": 0.96639,
+          "box": [
+            1154,
+            127,
+            1195,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "S3-40%",
+          "confidence": 0.99933,
+          "box": [
+            1236,
+            128,
+            1307,
+            144
+          ],
+          "words": []
+        },
+        {
+          "text": "Mo-2,2 Nm 10-3.3 A",
+          "confidence": 0.90608,
+          "box": [
+            779,
+            142,
+            1026,
+            161
+          ],
+          "words": []
+        },
+        {
+          "text": "VDE 0530 1.CL.F 100K",
+          "confidence": 0.9598,
+          "box": [
+            1055,
+            143,
+            1260,
+            159
+          ],
+          "words": []
+        },
+        {
+          "text": "Err./excit.",
+          "confidence": 0.99895,
+          "box": [
+            779,
+            159,
+            874,
+            174
+          ],
+          "words": []
+        },
+        {
+          "text": "V",
+          "confidence": 0.96752,
+          "box": [
+            910,
+            157,
+            931,
+            174
+          ],
+          "words": []
+        },
+        {
+          "text": "A",
+          "confidence": 0.9998,
+          "box": [
+            959,
+            158,
+            983,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "\u5e73",
+          "confidence": 0.85123,
+          "box": [
+            1026,
+            158,
+            1066,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "Lv",
+          "confidence": 0.74954,
+          "box": [
+            1108,
+            158,
+            1136,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "mH",
+          "confidence": 0.9977,
+          "box": [
+            1180,
+            159,
+            1217,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "Permanent",
+          "confidence": 0.99992,
+          "box": [
+            850,
+            171,
+            960,
+            190
+          ],
+          "words": []
+        },
+        {
+          "text": "IP 54",
+          "confidence": 0.98239,
+          "box": [
+            1038,
+            173,
+            1095,
+            189
+          ],
+          "words": []
+        },
+        {
+          "text": "IM B5",
+          "confidence": 0.97606,
+          "box": [
+            1132,
+            172,
+            1193,
+            189
+          ],
+          "words": []
+        },
+        {
+          "text": "Mo max - 2.5 Nm 1o max - 4.0 A 1.CLF 130K",
+          "confidence": 0.88237,
+          "box": [
+            833,
+            186,
+            1290,
+            206
+          ],
+          "words": []
+        },
+        {
+          "text": "\u4e00",
+          "confidence": 0.57016,
+          "box": [
+            840,
+            205,
+            874,
+            218
+          ],
+          "words": []
+        },
+        {
+          "text": "Tacho 1 HU1052 20mVmin Load 13k\u03a9",
+          "confidence": 0.96724,
+          "box": [
+            867,
+            202,
+            1257,
+            220
+          ],
+          "words": []
+        },
+        {
+          "text": "Made in Germany",
+          "confidence": 0.98986,
+          "box": [
+            1126,
+            217,
+            1279,
+            238
+          ],
+          "words": []
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "region-0-pass-1",
+      "region_index": 0,
+      "method": "contrast_upscale_border",
+      "rotation": 0,
+      "psm": 6,
+      "selected": false,
+      "quality_score": 0.865555,
+      "source_quad": [
+        [
+          747.0,
+          33.0
+        ],
+        [
+          1346.0,
+          33.0
+        ],
+        [
+          1346.0,
+          263.0
+        ],
+        [
+          747.0,
+          263.0
+        ]
+      ],
+      "lines": [
+        {
+          "text": "SIEMENS",
+          "confidence": 0.99983,
+          "box": [
+            937,
+            48,
+            1179,
+            81
+          ],
+          "words": []
+        },
+        {
+          "text": "=Perm-Magn-Mot.1HU3054-0AC01-Z",
+          "confidence": 0.99372,
+          "box": [
+            810,
+            84,
+            1222,
+            104
+          ],
+          "words": []
+        },
+        {
+          "text": "IEC56",
+          "confidence": 0.99254,
+          "box": [
+            789,
+            100,
+            850,
+            117
+          ],
+          "words": []
+        },
+        {
+          "text": "NrE7E82 405801001",
+          "confidence": 0.95831,
+          "box": [
+            903,
+            98,
+            1144,
+            118
+          ],
+          "words": []
+        },
+        {
+          "text": "1/min",
+          "confidence": 0.94278,
+          "box": [
+            937,
+            113,
+            993,
+            132
+          ],
+          "words": []
+        },
+        {
+          "text": "A",
+          "confidence": 0.99674,
+          "box": [
+            1056,
+            114,
+            1080,
+            131
+          ],
+          "words": []
+        },
+        {
+          "text": "kW",
+          "confidence": 0.91824,
+          "box": [
+            1156,
+            111,
+            1196,
+            132
+          ],
+          "words": []
+        },
+        {
+          "text": "174",
+          "confidence": 0.99382,
+          "box": [
+            812,
+            127,
+            846,
+            146
+          ],
+          "words": []
+        },
+        {
+          "text": "2000",
+          "confidence": 0.99998,
+          "box": [
+            935,
+            128,
+            983,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "2.8",
+          "confidence": 0.92686,
+          "box": [
+            1054,
+            127,
+            1085,
+            146
+          ],
+          "words": []
+        },
+        {
+          "text": "0.38",
+          "confidence": 0.97726,
+          "box": [
+            1155,
+            126,
+            1196,
+            145
+          ],
+          "words": []
+        },
+        {
+          "text": "S3-40%",
+          "confidence": 0.99943,
+          "box": [
+            1236,
+            127,
+            1308,
+            144
+          ],
+          "words": []
+        },
+        {
+          "text": "Mo - 2,2 Nm 1o-3.3 A",
+          "confidence": 0.81871,
+          "box": [
+            779,
+            141,
+            1026,
+            162
+          ],
+          "words": []
+        },
+        {
+          "text": "VDE 0530 1.CL.F 100K",
+          "confidence": 0.89169,
+          "box": [
+            1055,
+            142,
+            1261,
+            159
+          ],
+          "words": []
+        },
+        {
+          "text": "Err./excit.",
+          "confidence": 0.99614,
+          "box": [
+            778,
+            157,
+            874,
+            176
+          ],
+          "words": []
+        },
+        {
+          "text": "V",
+          "confidence": 0.94062,
+          "box": [
+            909,
+            155,
+            931,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "A",
+          "confidence": 0.99316,
+          "box": [
+            958,
+            158,
+            983,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "\u4e00\u5e73",
+          "confidence": 0.67076,
+          "box": [
+            1025,
+            157,
+            1066,
+            176
+          ],
+          "words": []
+        },
+        {
+          "text": "A7",
+          "confidence": 0.78226,
+          "box": [
+            1107,
+            158,
+            1137,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "Hw",
+          "confidence": 0.75282,
+          "box": [
+            1181,
+            158,
+            1218,
+            175
+          ],
+          "words": []
+        },
+        {
+          "text": "Permanent",
+          "confidence": 0.99994,
+          "box": [
+            848,
+            172,
+            961,
+            190
+          ],
+          "words": []
+        },
+        {
+          "text": "IP 54",
+          "confidence": 0.94405,
+          "box": [
+            1036,
+            172,
+            1095,
+            190
+          ],
+          "words": []
+        },
+        {
+          "text": "IM B5",
+          "confidence": 0.88315,
+          "box": [
+            1131,
+            171,
+            1194,
+            190
+          ],
+          "words": []
+        },
+        {
+          "text": "Mo max - 25 Nm lo max - 4.0 A 1.CLF 130K",
+          "confidence": 0.87845,
+          "box": [
+            832,
+            185,
+            1291,
+            207
+          ],
+          "words": []
+        },
+        {
+          "text": "Tacho 1HU1052 20mVmin Load 13k\u03a9",
+          "confidence": 0.96377,
+          "box": [
+            867,
+            201,
+            1258,
+            220
+          ],
+          "words": []
+        },
+        {
+          "text": "\u4e00",
+          "confidence": 0.53883,
+          "box": [
+            839,
+            204,
+            875,
+            219
+          ],
+          "words": []
+        },
+        {
+          "text": "Made in Germany",
+          "confidence": 0.99327,
+          "box": [
+            1125,
+            216,
+            1280,
+            238
+          ],
+          "words": []
+        },
+        {
+          "text": "WTERTEETVEO",
+          "confidence": 0.34962,
+          "box": [
+            747,
+            254,
+            817,
+            263
+          ],
+          "words": []
+        },
+        {
+          "text": "6C\u4e0a\u4e502\u884c\u7535600\u75358\u4e2d",
+          "confidence": 0.23927,
+          "box": [
+            1058,
+            256,
+            1219,
+            263
+          ],
+          "words": []
+        },
+        {
+          "text": "C4E%",
+          "confidence": 0.42268,
+          "box": [
+            1312,
+            257,
+            1344,
+            263
+          ],
+          "words": []
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "detections": [
+    {
+      "class_id": 0,
+      "label": "nameplate",
+      "confidence": 0.7631480693817139,
+      "box": [
+        747.7013969421387,
+        33.06149182216727,
+        1345.2444648742676,
+        262.2710898419936
+      ]
+    }
+  ],
+  "inference_mode": "detect_ocr",
+  "detector_revision": "nameplate-detector@v1",
+  "pipeline_warnings": [
+    "no_reliable_plate_boundary"
+  ],
+  "id": "c03d8094-a056-4926-a555-5bcb0bc7c375",
+  "capture_id": "e06e4656-b5a0-44cd-9a50-1acdbe10e764",
+  "created_at": "2026-10-31T22:45:17.014213+00:00",
+  "engine": "rapidocr",
+  "lines": [
+    {
+      "text": "SIEMENS",
+      "confidence": 0.99992,
+      "box": [
+        938,
+        50,
+        1178,
+        79
+      ],
+      "words": []
+    },
+    {
+      "text": "=Perm-Magn.-Mot.1 HU3054-0AC01-Z",
+      "confidence": 0.97034,
+      "box": [
+        812,
+        84,
+        1222,
+        103
+      ],
+      "words": []
+    },
+    {
+      "text": "IEC56",
+      "confidence": 0.99009,
+      "box": [
+        789,
+        101,
+        850,
+        117
+      ],
+      "words": []
+    },
+    {
+      "text": "NrE7E82 4058 01 001",
+      "confidence": 0.95373,
+      "box": [
+        904,
+        100,
+        1143,
+        117
+      ],
+      "words": []
+    },
+    {
+      "text": "1/min",
+      "confidence": 0.93889,
+      "box": [
+        938,
+        114,
+        992,
+        132
+      ],
+      "words": []
+    },
+    {
+      "text": "A",
+      "confidence": 0.9991,
+      "box": [
+        1058,
+        115,
+        1080,
+        131
+      ],
+      "words": []
+    },
+    {
+      "text": "kW",
+      "confidence": 0.93826,
+      "box": [
+        1158,
+        113,
+        1195,
+        131
+      ],
+      "words": []
+    },
+    {
+      "text": "174",
+      "confidence": 0.99125,
+      "box": [
+        812,
+        128,
+        846,
+        145
+      ],
+      "words": []
+    },
+    {
+      "text": "2000",
+      "confidence": 0.99998,
+      "box": [
+        936,
+        129,
+        983,
+        145
+      ],
+      "words": []
+    },
+    {
+      "text": "2,8",
+      "confidence": 0.92004,
+      "box": [
+        1055,
+        129,
+        1084,
+        145
+      ],
+      "words": []
+    },
+    {
+      "text": "0.38",
+      "confidence": 0.96639,
+      "box": [
+        1154,
+        127,
+        1195,
+        145
+      ],
+      "words": []
+    },
+    {
+      "text": "S3-40%",
+      "confidence": 0.99933,
+      "box": [
+        1236,
+        128,
+        1307,
+        144
+      ],
+      "words": []
+    },
+    {
+      "text": "Mo-2,2 Nm 10-3.3 A",
+      "confidence": 0.90608,
+      "box": [
+        779,
+        142,
+        1026,
+        161
+      ],
+      "words": []
+    },
+    {
+      "text": "VDE 0530 1.CL.F 100K",
+      "confidence": 0.9598,
+      "box": [
+        1055,
+        143,
+        1260,
+        159
+      ],
+      "words": []
+    },
+    {
+      "text": "Err./excit.",
+      "confidence": 0.99895,
+      "box": [
+        779,
+        159,
+        874,
+        174
+      ],
+      "words": []
+    },
+    {
+      "text": "V",
+      "confidence": 0.96752,
+      "box": [
+        910,
+        157,
+        931,
+        174
+      ],
+      "words": []
+    },
+    {
+      "text": "A",
+      "confidence": 0.9998,
+      "box": [
+        959,
+        158,
+        983,
+        175
+      ],
+      "words": []
+    },
+    {
+      "text": "\u5e73",
+      "confidence": 0.85123,
+      "box": [
+        1026,
+        158,
+        1066,
+        175
+      ],
+      "words": []
+    },
+    {
+      "text": "Lv",
+      "confidence": 0.74954,
+      "box": [
+        1108,
+        158,
+        1136,
+        175
+      ],
+      "words": []
+    },
+    {
+      "text": "mH",
+      "confidence": 0.9977,
+      "box": [
+        1180,
+        159,
+        1217,
+        175
+      ],
+      "words": []
+    },
+    {
+      "text": "Permanent",
+      "confidence": 0.99992,
+      "box": [
+        850,
+        171,
+        960,
+        190
+      ],
+      "words": []
+    },
+    {
+      "text": "IP 54",
+      "confidence": 0.98239,
+      "box": [
+        1038,
+        173,
+        1095,
+        189
+      ],
+      "words": []
+    },
+    {
+      "text": "IM B5",
+      "confidence": 0.97606,
+      "box": [
+        1132,
+        172,
+        1193,
+        189
+      ],
+      "words": []
+    },
+    {
+      "text": "Mo max - 2.5 Nm 1o max - 4.0 A 1.CLF 130K",
+      "confidence": 0.88237,
+      "box": [
+        833,
+        186,
+        1290,
+        206
+      ],
+      "words": []
+    },
+    {
+      "text": "\u4e00",
+      "confidence": 0.57016,
+      "box": [
+        840,
+        205,
+        874,
+        218
+      ],
+      "words": []
+    },
+    {
+      "text": "Tacho 1 HU1052 20mVmin Load 13k\u03a9",
+      "confidence": 0.96724,
+      "box": [
+        867,
+        202,
+        1257,
+        220
+      ],
+      "words": []
+    },
+    {
+      "text": "Made in Germany",
+      "confidence": 0.98986,
+      "box": [
+        1126,
+        217,
+        1279,
+        238
+      ],
+      "words": []
+    }
+  ],
+  "identifiers": [],
+  "status": "insufficient_evidence",
+  "candidates": [],
+  "requires_confirmation": true
+}

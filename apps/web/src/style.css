@@ -2786,3 +2786,275 @@ td small {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Structured equipment evidence, distinct from raw OCR diagnostics. */
+.equipment-evidence {
+  padding: 0 20px 20px;
+}
+.recognition-status {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 20px 0 4px;
+}
+.recognition-status .detection-icon {
+  flex-shrink: 0;
+}
+.recognition-status strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #53644c;
+}
+.recognition-status p {
+  font-size: 11px;
+  color: #77826d;
+  margin-top: 6px;
+}
+.equipment-evidence .section-label {
+  margin: 21px 0 12px;
+}
+.field-evidence-list {
+  display: grid;
+  gap: 15px;
+}
+.field-evidence-group h3 {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7c876e;
+  margin-bottom: 7px;
+}
+.field-evidence-value {
+  border: 1px solid #e0e7d5;
+  background: #f9fbf5;
+  border-radius: 7px;
+  padding: 12px;
+  margin-top: 7px;
+}
+.field-evidence-value.conflicting {
+  border-color: #e8cfc1;
+  background: #fff9f5;
+}
+.field-evidence-value.low_confidence {
+  border-color: #eae0c6;
+  background: #fffcf3;
+}
+.field-evidence-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+.field-evidence-heading code {
+  font-size: 14px;
+  color: #415138;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.field-evidence-heading .badge {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+.field-source {
+  font-size: 10px;
+  line-height: 1.75;
+  color: #7f8a71;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.field-evidence-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 7px;
+}
+.field-evidence-foot small {
+  font-size: 9px;
+  color: #8c977e;
+}
+.source-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  background: none;
+  color: #627a4b;
+  padding: 4px;
+  font-size: 10px;
+  border-radius: 4px;
+}
+.source-button:hover {
+  background: #eaf1df;
+}
+.recognition-empty,
+.model-boundary {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  border: 1px solid #e5e8da;
+  background: #f5f7ef;
+  border-radius: 7px;
+  padding: 12px;
+  margin: 12px 0;
+}
+.recognition-empty svg,
+.model-boundary svg {
+  flex-shrink: 0;
+  color: #879774;
+  margin-top: 2px;
+}
+.recognition-empty p,
+.model-boundary p {
+  font-size: 11px;
+  color: #7e8b6e;
+  line-height: 1.8;
+}
+.equipment-candidate {
+  padding: 13px;
+  border: 1px solid #e0e8d4;
+  background: #f9fbf4;
+  border-radius: 8px;
+  margin-top: 11px;
+}
+.equipment-candidate > div {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.equipment-candidate h3 {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #536b43;
+  overflow-wrap: anywhere;
+}
+.equipment-candidate > div .badge {
+  font-size: 8px;
+}
+.equipment-candidate p {
+  font-size: 10px;
+  color: #7b8a6b;
+  margin: 5px 0 10px;
+}
+.equipment-candidate small {
+  font-size: 10px;
+  display: block;
+  line-height: 1.8;
+  color: #7d8c6b;
+  overflow-wrap: anywhere;
+}
+.equipment-candidate.conflicting_evidence {
+  border-color: #ead4c8;
+  background: #fffaf6;
+}
+.equipment-candidate .conflict-text {
+  color: #9b6248;
+}
+.no-catalogue-match {
+  padding: 14px;
+  background: #f8f9f2;
+  border: 1px dashed #e1e7d5;
+  border-radius: 7px;
+  font-size: 11px;
+  color: #859175;
+  line-height: 1.8;
+}
+.raw-diagnostics {
+  border-top: 1px solid #e6ebdb;
+}
+.raw-diagnostics > summary,
+.reading-history > summary {
+  padding: 15px 20px;
+  font-size: 11px;
+  color: #7f8f6e;
+  cursor: pointer;
+  list-style: disclosure-closed;
+}
+.raw-diagnostics[open] > summary,
+.reading-history[open] > summary {
+  list-style: disclosure-open;
+}
+.reading-history {
+  border-top: 1px solid #e8eddf;
+  margin-top: 18px;
+}
+.reading-history > summary {
+  padding: 15px 0;
+}
+.reading-history > details {
+  border: 1px solid #e6ebda;
+  border-radius: 6px;
+  margin: 8px 0;
+  padding: 10px;
+}
+.reading-history > details > summary {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 10px;
+  color: #849575;
+}
+.reading-history .muted {
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 12px 0;
+}
+.reading-history-line {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  border-top: 1px solid #edf0e4;
+  padding: 9px 0;
+}
+.reading-history-line code {
+  font-size: 10px;
+  line-height: 1.8;
+  flex: 1;
+  overflow-wrap: anywhere;
+  color: #7b896a;
+}
+.reading-history-line .source-button {
+  font-size: 9px;
+}
+.raw-diagnostics .score-row {
+  margin-bottom: 18px;
+}
+.raw-diagnostics .ocr-lines {
+  max-height: 220px;
+}
+.raw-diagnostics .evidence-notice {
+  display: none;
+}
+@media (max-width: 700px) {
+  .equipment-evidence {
+    padding-inline: 16px;
+  }
+  .field-evidence-heading {
+    flex-wrap: wrap;
+  }
+  .equipment-candidate > div {
+    flex-wrap: wrap;
+  }
+  .field-evidence-foot {
+    align-items: start;
+  }
+  .field-evidence-foot small {
+    max-width: 60%;
+    line-height: 1.7;
+  }
+  .recognition-status strong {
+    font-size: 13px;
+  }
+  .field-evidence-heading code {
+    font-size: 14px;
+  }
+  .source-button {
+    min-height: 32px;
+    font-size: 11px;
+  }
+  .equipment-evidence .section-label > span:first-child {
+    font-size: 9px;
+  }
+}

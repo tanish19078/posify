@@ -1,3 +1,4 @@
+import recordedRecognition from "./demoRecognition.json";
 import { ApiError } from "./api";
 import type {
   Analysis,
@@ -42,11 +43,11 @@ export const demoAssets: Asset[] = [
   {
     id: "00000000-0000-4000-8000-000000000011",
     site_id: "demo-pune",
-    tag: "CT-014",
-    manufacturer: "Training Equipment Co.",
-    model: "CT-15",
+    tag: "DM-014",
+    manufacturer: "SIEMENS",
+    model: "1HU3054-0AC01-Z",
     serial: "DEMO-014",
-    category: "Current transformer",
+    category: "Permanent-magnet DC motor",
     location: "Electrical bay · Panel 03",
     revision: 1,
   },
@@ -76,38 +77,20 @@ export const demoAssets: Asset[] = [
 const capture: Capture = {
   id: "00000000-0000-4000-8000-000000000021",
   site_id: "demo-pune",
-  sha256: "a729433d438463bd8f2e6928070fe8ae39d718b2d30ac8f75df69ca3fe3cd5dc",
-  width: 1600,
-  height: 900,
+  sha256: "4b04ffe183fc552eeb2e9b3a66a50c5557f7f3b499277a61386cb45ac5d27bdd",
+  width: 2400,
+  height: 1041,
   warnings: [],
   created_at: stamp,
 };
 export const demoAnalysis: Analysis = {
+  // Recorded API payload is validated by CaptureAnalysis; JSON erases tuple types.
+  ...(recordedRecognition as unknown as Analysis),
   id: "00000000-0000-4000-8000-000000000031",
   capture_id: capture.id,
   created_at: stamp,
-  engine: "tesseract",
-  inference_mode: "detect_ocr",
-  status: "insufficient_evidence",
-  requires_confirmation: true,
-  candidates: [],
-  identifiers: [],
-  detector_revision: "nameplate-detector@v1",
-  pipeline_warnings: [],
-  detections: [
-    {
-      class_id: 0,
-      label: "nameplate",
-      confidence: 0.926398,
-      box: [357.2186, 212.3747, 1529.6912, 838.5213],
-    },
-  ],
-  lines: [
-    { text: "Rated current ratio| 15/ 5A", confidence: 0.603, box: null },
-    { text: "Rated insulation level 2", confidence: 0.121, box: null },
-    { text: "Rated dynam! |", confidence: 0.68, box: null },
-  ],
 };
+
 const procedure: Procedure = {
   id: "00000000-0000-4000-8000-000000000041",
   site_id: "demo-pune",
@@ -128,16 +111,19 @@ const procedure: Procedure = {
   source_text:
     "Synthetic training procedure. Record whether the nameplate is readable and whether identifiers can be verified. This is not an operational maintenance instruction.",
 };
-const models: Model[] = demoAssets.map((asset, i) => ({
-  id: `00000000-0000-4000-8000-00000000005${i}`,
-  manufacturer: asset.manufacturer,
-  model: asset.model,
-  category: asset.category,
-  variant: "base",
-  source_ref: "Illustrative training catalogue",
-  status: "published",
-  created_at: stamp,
-}));
+const models: Model[] = (demoAnalysis.equipment_candidates || []).map(
+  (item) => ({
+    id: item.catalog_model_id,
+    manufacturer: item.manufacturer,
+    model: item.model,
+    variant: item.variant,
+    category: item.category,
+    source_ref: item.source_ref,
+    status: "published",
+    created_at: stamp,
+  }),
+);
+
 const inspection: Inspection = {
   id: "00000000-0000-4000-8000-000000000061",
   asset_id: demoAssets[0].id,
@@ -194,7 +180,7 @@ export async function demoRequest<T>(
   let value: unknown;
   if (path.includes("/image"))
     return (await (
-      await fetch("/images/nameplate.jpg", { signal: init.signal })
+      await fetch("/images/machine.jpg", { signal: init.signal })
     ).blob()) as T;
   if (path === "/v1/workspaces") value = demoSession.factories;
   else if (path.startsWith("/v1/assets?")) value = empty ? [] : demoAssets;
