@@ -1,6 +1,7 @@
 """Database-backed queue. Claims and result publication are short transactions."""
 import json
 import os
+from threading import Event, Thread
 import time
 from datetime import datetime, timezone
 from typing import Literal
@@ -46,6 +47,9 @@ def public_job(row):
 
 
 def install_job_routes(app, database, auth):
+    app.state.job_deadline = int(os.getenv('POSIFY_JOB_DEADLINE_SECONDS', '1800'))
+    if not 30 <= app.state.job_deadline <= 7200:
+        raise RuntimeError('POSIFY_JOB_DEADLINE_SECONDS must be between 30 and 7200')
     queue_limit = int(os.getenv('POSIFY_QUEUE_LIMIT', '100'))
     if not 1 <= queue_limit <= 10000:
         raise RuntimeError('POSIFY_QUEUE_LIMIT must be between 1 and 10000')
@@ -148,17 +152,42 @@ def finish_job(database, claim, result=None, error_code=None, retryable=False):
         return True
 
 
+def renew_claim(database, claim, lease_seconds):
+    with database.connect() as db:
+        db.execute('BEGIN IMMEDIATE')
+        result = db.execute("UPDATE analysis_jobs SET lease_until=?,updated_at=? WHERE id=? AND status='running' AND claim_token=? AND lease_until>?",
+                            (time.time() + lease_seconds, timestamp(), claim['id'], claim['claim_token'], time.time()))
+        return result.rowcount == 1
+
+
 def work_once(app, lease_seconds=300):
     claim = claim_job(app.state.database, lease_seconds)
     if not claim:
         return False
+    stopped = Event()
+    deadline = time.monotonic() + app.state.job_deadline
+    def heartbeat():
+        while not stopped.wait(max(.1, lease_seconds / 3)):
+            try:
+                if time.monotonic() >= deadline or not renew_claim(app.state.database, claim, lease_seconds):
+                    return
+            except Exception:
+                return  # Lost database contact: let the lease expire; do not assume ownership.
+    thread = Thread(target=heartbeat, name='posify-job-heartbeat', daemon=True)
+    thread.start()
     try:
         result = compute_analysis(app, app.state.database, app.state.capture_root,
                                   claim['site_id'], claim['capture_id'], claim['mode'])
-        finish_job(app.state.database, claim, result=result)
+        if time.monotonic() >= deadline:
+            finish_job(app.state.database, claim, error_code='execution_deadline')
+        else:
+            finish_job(app.state.database, claim, result=result)
     except HTTPException as exc:
         finish_job(app.state.database, claim, error_code=f'component_http_{exc.status_code}',
                    retryable=exc.status_code >= 500)
     except Exception:
         finish_job(app.state.database, claim, error_code='internal_analysis_error', retryable=True)
+    finally:
+        stopped.set()
+        thread.join(timeout=1)
     return True

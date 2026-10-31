@@ -13,6 +13,7 @@ from posify.audit import actor, record_event as audit
 from posify.security import authorization, install_security_routes
 from posify.reviews import install_review_routes
 from posify.corrections import install_correction_routes
+from posify.documents import install_document_routes
 from posify.capture_routes import install_capture_routes
 from posify.captures import capture_row
 from posify.ocr import LocalOCR
@@ -74,7 +75,10 @@ def create_app(db_path=None, api_token=None, database_url=None):
     install_job_routes(app, database, auth)
     app.state.ocr = LocalOCR()
     app.state.detector = LocalDetector()
-    app.state.retriever = HybridRetriever()
+    app.state.retriever = HybridRetriever(database=database)
+    document_root = Path(os.getenv("POSIFY_DOCUMENT_DIR", str(Path(database.path).parent / "documents")))
+    app.state.document_root = document_root
+    install_document_routes(app, database, auth, document_root)
     capture_root = Path(os.getenv("POSIFY_CAPTURE_DIR", str(Path(database.path).parent / "captures")))
     app.state.capture_root = capture_root
     install_capture_routes(app, database, auth, capture_root)
@@ -100,7 +104,11 @@ def create_app(db_path=None, api_token=None, database_url=None):
                 "AND d.revision=(SELECT MAX(newer.revision) FROM catalog_documents newer WHERE "
                 "newer.catalog_model_id=d.catalog_model_id AND newer.title=d.title AND newer.status='published')",
                 (a['id'],)).fetchall()
-            knowledge = [dict(r) for r in rows] + [{**dict(r), 'source_kind': 'catalog_document'} for r in global_rows]
+            knowledge = [dict(r) for r in rows]
+            for row in global_rows:
+                pages = db.execute('SELECT page_number,source_text FROM document_pages WHERE document_id=? ORDER BY page_number', (row['id'],)).fetchall()
+                knowledge.extend([{**dict(row), **dict(page), 'source_kind': 'catalog_document'} for page in pages]
+                                 if pages else [{**dict(row), 'source_kind': 'catalog_document'}])
         sources = await run_in_threadpool(app.state.retriever.search, knowledge, body.question)
         result = await explain(sources, body.question, app.state.model_name,
                                app.state.model_url, app.state.model_transport)
@@ -119,6 +127,16 @@ def create_app(db_path=None, api_token=None, database_url=None):
             "database": {"dialect": database.dialect},
             "authentication": {"mode": mode, "bootstrap_enabled": mode == "development"},
         }
+
+    @app.get("/v1/operations", dependencies=auth)
+    def operations():
+        with database.connect() as db:
+            queues = [dict(row) for row in db.execute(
+                'SELECT site_id,status,COUNT(*) AS count FROM analysis_jobs GROUP BY site_id,status ORDER BY site_id,status')]
+            pending_reviews = db.execute("SELECT COUNT(*) AS count FROM inspections i WHERE status='submitted' AND NOT EXISTS (SELECT 1 FROM inspection_reviews r WHERE r.inspection_id=i.id)").fetchone()['count']
+            pending_corrections = db.execute("SELECT COUNT(*) AS count FROM correction_requests WHERE status='pending'").fetchone()['count']
+        return {'analysis_queues': queues, 'pending_reviews': pending_reviews,
+                'pending_corrections': pending_corrections, 'database': database.dialect}
 
     @app.get("/health")
     def health():

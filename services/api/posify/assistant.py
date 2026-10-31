@@ -11,10 +11,12 @@ STOP = {'the', 'and', 'what', 'this', 'that', 'with', 'does', 'should', 'have', 
 
 def source_excerpt(record, offset):
     kind = record.get('source_kind', 'factory_procedure')
-    return {'id': f"{record['id']}:{offset // 1000}",
+    page = record.get('page_number')
+    suffix = f"p{page}:" if page is not None else ''
+    return {'id': f"{record['id']}:{suffix}{offset // 1000}",
             'procedure_id': record['id'] if kind == 'factory_procedure' else None,
             'document_id': record['id'] if kind == 'catalog_document' else None,
-            'source_kind': kind, 'source_ref': record.get('source_ref'),
+            'source_kind': kind, 'source_ref': record.get('source_ref'), 'page_number': page,
             'version': record['version'], 'title': record['title'],
             'excerpt': record['source_text'][offset:offset + 1000]}
 

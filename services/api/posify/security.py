@@ -46,6 +46,8 @@ for method, suffix, role in [
     SITE_PERMISSIONS[(method, '/v1/sites/{site_id}' + suffix)] = role
 
 CATALOG_PERMISSIONS = {
+    ('POST', '/v1/catalog/models/{model_id}/pdf'),
+    ('GET', '/v1/catalog/documents/{document_id}/pdf'),
     ('GET', '/v1/catalog/models'), ('POST', '/v1/catalog/models'),
     ('POST', '/v1/catalog/models/{model_id}/publish'),
     ('GET', '/v1/catalog/models/{model_id}/documents'),
@@ -169,7 +171,9 @@ def authorization(database, bootstrap_token, mode):
                 raise HTTPException(401, 'Invalid or expired credential')
             who = {**dict(row), 'type': 'user'}
         body = None
-        if request.method not in {'GET', 'HEAD'} and not request.path_params.get('site_id'):
+        if request.method != 'GET' and request.scope['route'].path in {
+            '/v1/assets', '/v1/procedures', '/v1/identify', '/v1/inspections',
+            '/v1/assistant/query', '/v1/inspections/{inspection_id}/observations'}:
             try:
                 body = await request.json()
             except (ValueError, UnicodeDecodeError):

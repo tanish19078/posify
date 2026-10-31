@@ -155,6 +155,7 @@ class SourceExcerpt(StrictModel):
     document_id: UUID | None = None
     source_kind: Literal['factory_procedure', 'catalog_document'] = 'factory_procedure'
     source_ref: str | None = None
+    page_number: int | None = Field(default=None, ge=1)
     version: int
     title: str
     excerpt: str
