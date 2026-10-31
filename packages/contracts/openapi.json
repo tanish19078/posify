@@ -468,6 +468,25 @@
             "title": "Engine",
             "type": "string"
           },
+          "equipment_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentCandidate"
+            },
+            "title": "Equipment Candidates",
+            "type": "array"
+          },
+          "equipment_fields": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentField"
+            },
+            "title": "Equipment Fields",
+            "type": "array"
+          },
+          "equipment_status": {
+            "default": "not_evaluated",
+            "title": "Equipment Status",
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -502,6 +521,24 @@
             },
             "title": "Pipeline Warnings",
             "type": "array"
+          },
+          "reading_attempts": {
+            "items": {
+              "$ref": "#/components/schemas/ReadingAttempt"
+            },
+            "title": "Reading Attempts",
+            "type": "array"
+          },
+          "recognition_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recognition Version"
           },
           "requires_confirmation": {
             "title": "Requires Confirmation",
@@ -1074,6 +1111,231 @@
         "title": "DocumentCreate",
         "type": "object"
       },
+      "EquipmentCandidate": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_model_id": {
+            "format": "uuid",
+            "title": "Catalog Model Id",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "conflicting_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Conflicting Fields",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "matched_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Matched Fields",
+            "type": "array"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "requires_review": {
+            "default": true,
+            "title": "Requires Review",
+            "type": "boolean"
+          },
+          "retrieval_basis": {
+            "enum": [
+              "exact_model",
+              "approximate_model",
+              "manufacturer_only"
+            ],
+            "title": "Retrieval Basis",
+            "type": "string"
+          },
+          "source_ref": {
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "evidence_supported",
+              "partial_evidence",
+              "conflicting_evidence"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "variant": {
+            "title": "Variant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "catalog_model_id",
+          "manufacturer",
+          "model",
+          "variant",
+          "category",
+          "source_ref",
+          "status",
+          "matched_fields",
+          "missing_fields",
+          "conflicting_fields",
+          "evidence_ids",
+          "retrieval_basis"
+        ],
+        "title": "EquipmentCandidate",
+        "type": "object"
+      },
+      "EquipmentField": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_id": {
+            "title": "Attempt Id",
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "explicit_label",
+              "catalogue_vocabulary",
+              "header_candidate",
+              "code_candidate",
+              "unit_pattern"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "corroborating_attempts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Corroborating Attempts",
+            "type": "array"
+          },
+          "field": {
+            "enum": [
+              "manufacturer",
+              "model",
+              "serial",
+              "asset_tag",
+              "voltage",
+              "power",
+              "speed",
+              "frequency",
+              "frame"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "line_index": {
+            "title": "Line Index",
+            "type": "integer"
+          },
+          "ocr_confidence": {
+            "title": "Ocr Confidence",
+            "type": "number"
+          },
+          "raw_text": {
+            "title": "Raw Text",
+            "type": "string"
+          },
+          "region_index": {
+            "title": "Region Index",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "observed",
+              "low_confidence",
+              "conflicting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "field",
+          "value",
+          "raw_text",
+          "attempt_id",
+          "region_index",
+          "line_index",
+          "box",
+          "ocr_confidence",
+          "basis",
+          "status"
+        ],
+        "title": "EquipmentField",
+        "type": "object"
+      },
       "EvidenceAttach": {
         "additionalProperties": false,
         "properties": {
@@ -1566,6 +1828,62 @@
         "title": "Membership",
         "type": "object"
       },
+      "OCRLine": {
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/OCRWord"
+            },
+            "title": "Words",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "confidence"
+        ],
+        "title": "OCRLine",
+        "type": "object"
+      },
       "OCRLineResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1603,6 +1921,13 @@
           "text": {
             "title": "Text",
             "type": "string"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/OCRWord"
+            },
+            "title": "Words",
+            "type": "array"
           }
         },
         "required": [
@@ -1611,6 +1936,55 @@
           "box"
         ],
         "title": "OCRLineResponse",
+        "type": "object"
+      },
+      "OCRWord": {
+        "properties": {
+          "box": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Box"
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "confidence"
+        ],
+        "title": "OCRWord",
         "type": "object"
       },
       "Observation": {
@@ -1915,6 +2289,88 @@
           "source_text"
         ],
         "title": "ProcedureCreate",
+        "type": "object"
+      },
+      "ReadingAttempt": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/OCRLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "psm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psm"
+          },
+          "quality_score": {
+            "default": 0,
+            "title": "Quality Score",
+            "type": "number"
+          },
+          "region_index": {
+            "title": "Region Index",
+            "type": "integer"
+          },
+          "rotation": {
+            "title": "Rotation",
+            "type": "integer"
+          },
+          "selected": {
+            "default": false,
+            "title": "Selected",
+            "type": "boolean"
+          },
+          "source_quad": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Source Quad",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "region_index",
+          "method",
+          "rotation",
+          "psm"
+        ],
+        "title": "ReadingAttempt",
         "type": "object"
       },
       "Review": {
