@@ -8,6 +8,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -e '.[dev]'
+      - run: pip install -r requirements-dev.lock
+      - run: pip install --no-deps -e .
+      - run: sudo apt-get update -qq && sudo apt-get install -y tesseract-ocr fonts-dejavu-core
       - run: pytest -q
       - run: python scripts/export_contracts.py --check
