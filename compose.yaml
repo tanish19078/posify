@@ -23,7 +23,9 @@ services:
   api:
     build: .
     environment: &runtime
-      POSIFY_API_TOKEN: ${POSIFY_API_TOKEN:?Set POSIFY_API_TOKEN}
+      POSIFY_API_TOKEN: ${POSIFY_API_TOKEN:-}
+      POSIFY_AUTH_MODE: ${POSIFY_AUTH_MODE:-development}
+      POSIFY_QUEUE_LIMIT: ${POSIFY_QUEUE_LIMIT:-100}
       POSIFY_DATABASE_URL: postgresql+psycopg://posify:${POSIFY_DB_PASSWORD}@db:5432/posify
       POSIFY_AUTO_MIGRATE: 'false'
       POSIFY_CAPTURE_DIR: /data/captures

@@ -16,3 +16,7 @@ models/
 
 build/
 dist/
+
+# Locally provisioned individual access credentials.
+credentials/
+*.credentials.json

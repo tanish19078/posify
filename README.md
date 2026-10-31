@@ -62,8 +62,10 @@ manufacturer/model. Each inspection pins a procedure ID. Later revisions do not
 rewrite an existing inspection. Retrieval can use applicable factory procedures
 and published global documents, with each source kind labelled separately.
 
-These relationships define data ownership. Access currently uses one instance-wide
-API key; individual identities and role/site authorization remain to be implemented.
+Individual bearer credentials and factory roles enforce access to these records.
+Global catalogue curators manage shared knowledge. A shared bootstrap key remains
+available in development mode; `POSIFY_AUTH_MODE=users` disables it. See
+[identity and review](docs/ACCESS_AND_REVIEW.md) for provisioning and role rules.
 
 ## Capture-to-inspection workflow
 
@@ -78,6 +80,17 @@ API key; individual identities and role/site authorization remain to be implemen
    captures and record a result for each procedure step.
 6. Submit the inspection. Failed and unknown findings remain explicit; submission
    records completion of data entry and does not represent supervisor approval.
+
+## Human review and access
+
+Named supervisors review submitted inspections independently of their creator and
+submitter. Failed or unknown findings require follow-up; reviews preserve the
+original inspection. Managers can request catalogue-link or capture-assignment
+corrections for another individual to decide. Attached capture evidence cannot be
+reassigned. Review and correction records are immutable after a decision.
+
+See [access and review operations](docs/ACCESS_AND_REVIEW.md) for the role matrix,
+provisioning API and request formats.
 
 ## Correctness guarantees
 
@@ -110,7 +123,7 @@ uvicorn posify.app:app --host 127.0.0.1 --port 8000
 ```
 
 SQLite is created and migrated at `var/posify.db` by default. Business endpoints
-require `X-API-Key`; `/health` is public. Open [interactive API docs](http://127.0.0.1:8000/docs)
+accept the development `X-API-Key` or an individual bearer token; `/health` is public. Open [interactive API docs](http://127.0.0.1:8000/docs)
 and use **Authorize** with the generated token. Environment settings are documented
 in [.env.example](.env.example); shell-based execution requires exporting them.
 
@@ -185,13 +198,12 @@ python scripts/export_contracts.py --check
 ```
 
 CI exercises the backend against SQLite and PostgreSQL. The local SQLite suite
-currently covers 63 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
+currently covers 85 tests; PostgreSQL validation runs in CI. This does not establish industrial detection
 accuracy, latency or production readiness. Optional model extras are outside the
 core dependency lock and require their own environment validation.
 
-Remaining engineering work includes the web client, individual authentication and
-site/role authorization, reviewed identity/link corrections, supervisor review,
-PDF ingestion, persistent retrieval indexing, model evaluation and operating controls
-for quotas, monitoring, retention and tested backup restoration. Queue heartbeats
-and cancellation are also pending. QR decoding, 3D reconstruction and work-order
+Individual access, supervisor review, reviewed link corrections, queue capacity
+limits and cancellation are implemented. Remaining work includes the web client,
+SSO, physical identity-field corrections, PDF ingestion, persistent retrieval indexing,
+model evaluation, worker heartbeats, monitoring, retention and tested backup restoration. QR decoding, 3D reconstruction and work-order
 integrations are outside the current implementation.
