@@ -1,8 +1,10 @@
 """Inference-only YOLO11 ONNX contract. No training or implicit downloads."""
 import hashlib
 import importlib.util
+from importlib.metadata import version, PackageNotFoundError
 import json
 import os
+import time
 from pathlib import Path
 from threading import Lock
 
@@ -47,7 +49,7 @@ def preprocess(image, size):
     target_h, target_w = size
     width, height = image.size
     ratio = min(target_w / width, target_h / height)
-    new_w, new_h = round(width * ratio), round(height * ratio)
+    new_w, new_h = max(1, round(width * ratio)), max(1, round(height * ratio))
     left, top = (target_w - new_w) // 2, (target_h - new_h) // 2
     canvas = Image.new('RGB', (target_w, target_h), (114, 114, 114))
     canvas.paste(image.convert('RGB').resize((new_w, new_h), Image.Resampling.BILINEAR), (left, top))
@@ -93,18 +95,45 @@ def postprocess(output, manifest, original_size, transform):
     return selected
 
 
+def runtime_version():
+    try:
+        return version('onnxruntime')
+    except PackageNotFoundError:
+        return None
+
+
+def supported_runtime(installed):
+    if not installed:
+        return False
+    from packaging.version import Version, InvalidVersion
+    try:
+        return Version('1.31.1') <= Version(installed) < Version('2')
+    except InvalidVersion:
+        return False
+
+
 class LocalDetector:
     def __init__(self):
         self.manifest_path = os.getenv('POSIFY_DETECTOR_MANIFEST', '')
         self.manifest = None
         self.session = None
         self._lock = Lock()
+        self.threads = int(os.getenv('POSIFY_DETECTOR_THREADS', '1'))
+        if not 1 <= self.threads <= 8:
+            raise RuntimeError('POSIFY_DETECTOR_THREADS must be between 1 and 8')
+        self.successful_inferences = 0
+        self.last_inference_ms = None
 
     def readiness(self):
+        installed = runtime_version()
         return {'configured': bool(self.manifest_path),
                 'manifest_present': bool(self.manifest_path and Path(self.manifest_path).is_file()),
                 'runtime_present': importlib.util.find_spec('onnxruntime') is not None,
+                'runtime_version': installed, 'runtime_compatible': supported_runtime(installed),
                 'loaded': self.session is not None, 'inference_implemented': True,
+                'successful_inferences': self.successful_inferences, 'last_inference_ms': self.last_inference_ms,
+                'threads': self.threads, 'model_id': self.manifest.model_id if self.manifest else None,
+                'revision': self.manifest.revision if self.manifest else None,
                 'training': 'external_colab', 'supported_layout': 'yolo11_raw_xywh_class_scores'}
 
     def predict(self, image_path):
@@ -112,33 +141,55 @@ class LocalDetector:
             raise HTTPException(503, 'Detector manifest, artifact or ONNX Runtime is not configured')
         with self._lock:
             try:
-                if self.session is None:
-                    path = Path(self.manifest_path).resolve()
-                    self.manifest = DetectorManifest.model_validate_json(path.read_text())
-                    artifact = (path.parent / self.manifest.artifact).resolve()
-                    if not artifact.is_relative_to(path.parent) or artifact.suffix.lower() != '.onnx':
-                        raise ValueError('Artifact must be an ONNX file within the manifest directory')
-                    digest = hashlib.sha256()
-                    with artifact.open('rb') as stream:
-                        while chunk := stream.read(1024 * 1024):
-                            digest.update(chunk)
-                    if digest.hexdigest() != self.manifest.sha256.lower():
-                        raise ValueError('Model digest mismatch')
-                    import onnxruntime as ort
-                    session = ort.InferenceSession(str(artifact), providers=['CPUExecutionProvider'])
-                    inputs = session.get_inputs()
-                    if len(inputs) != 1 or inputs[0].type != 'tensor(float)' or inputs[0].shape != [1, 3, *self.manifest.input_size]:
-                        raise ValueError('Model must expose one static float32 NCHW input')
-                    if len(session.get_outputs()) != 1:
-                        raise ValueError('Model must expose one raw detection output')
-                    self.session = session
+                self._load_locked()
                 with Image.open(image_path) as image:
                     tensor, transform = preprocess(image, self.manifest.input_size)
+                    started = time.perf_counter()
                     output = self.session.run(None, {self.session.get_inputs()[0].name: tensor})[0]
+                    elapsed = (time.perf_counter() - started) * 1000
                     detections = postprocess(output, self.manifest, image.size, transform)
+                    self.successful_inferences += 1
+                    self.last_inference_ms = round(elapsed, 3)
                 return detections, self.manifest.model_id + '@' + self.manifest.revision
             except HTTPException:
                 raise
             except Exception:
                 self.session = None
                 raise HTTPException(503, 'Detector failed; verify its local manifest, digest and tensor contract')
+
+    def load(self):
+        """Operator-only local use; no artifact upload or remote downloads."""
+        with self._lock:
+            self._load_locked()
+        return self.manifest, self.session
+
+    def _load_locked(self):
+        if self.session is None:
+            if not supported_runtime(runtime_version()):
+                raise ValueError('Install the supported CPU runtime from requirements-inference.lock')
+            path = Path(self.manifest_path).resolve()
+            self.manifest = DetectorManifest.model_validate_json(path.read_text())
+            artifact = (path.parent / self.manifest.artifact).resolve()
+            if not artifact.is_relative_to(path.parent) or artifact.suffix.lower() != '.onnx':
+                raise ValueError('Artifact must be an ONNX file within the manifest directory')
+            digest = hashlib.sha256()
+            with artifact.open('rb') as stream:
+                while chunk := stream.read(1024 * 1024):
+                    digest.update(chunk)
+            if digest.hexdigest() != self.manifest.sha256.lower():
+                raise ValueError('Model digest mismatch')
+            import onnxruntime as ort
+            options = ort.SessionOptions()
+            options.intra_op_num_threads = self.threads
+            options.inter_op_num_threads = 1
+            session = ort.InferenceSession(str(artifact), sess_options=options, providers=['CPUExecutionProvider'])
+            inputs = session.get_inputs()
+            if len(inputs) != 1 or inputs[0].type != 'tensor(float)' or inputs[0].shape != [1, 3, *self.manifest.input_size]:
+                raise ValueError('Model must expose one static float32 NCHW input')
+            outputs = session.get_outputs()
+            if (len(outputs) != 1 or outputs[0].type != 'tensor(float)' or
+                outputs[0].shape[:2] != [1, 4 + len(self.manifest.class_names)] or
+                len(outputs[0].shape) != 3 or not isinstance(outputs[0].shape[2], int) or
+                not 1 <= outputs[0].shape[2] <= 100000):
+                raise ValueError('Model must expose one static raw float detection output')
+            self.session = session
