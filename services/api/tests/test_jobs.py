@@ -1,11 +1,34 @@
 import time
 from uuid import uuid4
 
+import pytest
+from fastapi import HTTPException
+
 from posify.detector import Detection
 from posify.jobs import claim_job, finish_job, work_once
 from posify.ocr import OCRLine
 from test_api import client, setup_records
 from test_captures import FakeOCR, upload
+
+
+@pytest.mark.parametrize('stage', ['detector', 'ocr'])
+def test_worker_component_failure_preserves_stage_without_private_details(client, stage):
+    class Unavailable:
+        engine = 'fixture'
+        def predict(self, path):
+            if stage == 'detector':
+                raise HTTPException(503, 'private/path/credential-must-not-be-stored')
+            return [Detection(class_id=0, label='nameplate', confidence=.9, box=(0, 0, 500, 300))], 'fixture@v1'
+        def recognize(self, path):
+            raise HTTPException(503, 'private/path/credential-must-not-be-stored')
+    client.app.state.detector = client.app.state.ocr = Unavailable()
+    capture = upload(client).json()['capture']
+    job = enqueue(client, capture, mode='detect_ocr').json()
+    assert work_once(client.app)
+    result = client.get('/v1/sites/plant-a/jobs/' + job['id']).json()
+    assert result['error_code'] == stage + '_http_503'
+    assert result['status'] == 'queued'
+    assert 'private/path' not in str(result)
 
 
 def enqueue(c, capture, **overrides):
@@ -50,7 +73,7 @@ def test_worker_retries_are_bounded(client):
     result = client.get(f"/v1/sites/plant-a/jobs/{job['id']}").json()
     assert result['status'] == 'failed'
     assert result['attempts'] == 3
-    assert result['error_code'] == 'component_http_503'
+    assert result['error_code'] == 'ocr_http_503'
     assert not work_once(client.app)
 
 
