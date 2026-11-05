@@ -169,7 +169,8 @@ def test_provisioning_cli_private_file_and_existing_output_rollback(tmp_path):
     first = subprocess.run(command, env=env, capture_output=True, text=True)
     assert first.returncode == 0, first.stderr
     credential = json.loads(output.read_text())
-    assert os.stat(output).st_mode & 0o777 == 0o600
+    if os.name != 'nt':
+        assert os.stat(output).st_mode & 0o777 == 0o600
     assert credential['token'] not in first.stdout
     second = subprocess.run(command, env=env, capture_output=True, text=True)
     assert second.returncode != 0

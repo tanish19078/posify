@@ -10,7 +10,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
 with tempfile.TemporaryDirectory() as tmp:
-    contract = create_app(str(Path(tmp) / 'contract.db'), 'contract-export-only').openapi()
+    app = create_app(str(Path(tmp) / 'contract.db'), 'contract-export-only')
+    try:
+        contract = app.openapi()
+    finally:
+        app.state.database.engine.dispose()
 content = json.dumps(contract, indent=2, sort_keys=True) + '\n'
 path = Path(__file__).resolve().parents[1] / 'packages/contracts/openapi.json'
 if args.check:

@@ -62,7 +62,12 @@ def persist_image(root: Path, data: bytes):
                 stream.write(data)
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temp_name, target)
+            try:
+                os.replace(temp_name, target)
+            except OSError:
+                # Another writer may have installed this immutable digest first.
+                if not target.is_file():
+                    raise
         finally:
             Path(temp_name).unlink(missing_ok=True)
     return digest

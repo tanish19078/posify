@@ -56,7 +56,12 @@ def store_original(root, digest, raw):
         try:
             handle.write(raw)
             handle.flush()
-            temporary.replace(target)
+            try:
+                temporary.replace(target)
+            except OSError:
+                # Concurrent imports can share the same content-addressed original.
+                if not target.is_file():
+                    raise
         finally:
             temporary.unlink(missing_ok=True)
 

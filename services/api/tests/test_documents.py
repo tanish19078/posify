@@ -1,4 +1,5 @@
 import io
+import os
 
 import pytest
 from pypdf import PdfWriter
@@ -33,6 +34,7 @@ def import_pdf(c, model_id, raw, **overrides):
                   headers={'Content-Type': 'application/pdf'}, content=raw)
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='PDF resource isolation requires Unix')
 def test_pdf_draft_publication_download_and_page_level_retrieval(client):
     a, _ = setup_records(client)
     model = create_model(client).json()
@@ -68,6 +70,7 @@ def test_pdf_draft_publication_download_and_page_level_retrieval(client):
     (pdf_bytes(['']), 422), (pdf_bytes(['Text'], encrypted=True), 422),
     (pdf_bytes(['x' * 30001]), 413), (pdf_bytes([''] * 101), 413),
 ])
+@pytest.mark.skipif(os.name == 'nt', reason='PDF resource isolation requires Unix')
 def test_pdf_resource_and_content_limits(client, raw, status):
     model = create_model(client).json()
     response = import_pdf(client, model['id'], raw)
