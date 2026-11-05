@@ -65,12 +65,26 @@ def install_capture_routes(app, database, auth, root):
             return lookup(db, capture_id, site_id)
 
     @app.get('/v1/sites/{site_id}/captures', response_model=list[Capture], dependencies=auth)
-    def list_captures(site_id: str, limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
+    def list_captures(site_id: str, limit: int = Query(50, ge=1, le=200),
+                      offset: int = Query(0, ge=0), asset_id: UUID | None = None):
         with database.connect() as db:
             require_factory(db, site_id)
-            return [capture_row(row) for row in db.execute(
-                'SELECT * FROM captures WHERE site_id=? ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
-                (site_id, limit, offset))]
+            if asset_id is not None:
+                asset = db.execute('SELECT id FROM assets WHERE id=? AND site_id=?',
+                                   (str(asset_id), site_id)).fetchone()
+                if not asset:
+                    raise HTTPException(404, 'Asset not found in this site')
+                rows = db.execute(
+                    'SELECT c.* FROM captures c JOIN capture_assignments ca ON ca.capture_id=c.id '
+                    'WHERE c.site_id=? AND ca.asset_id=? '
+                    'ORDER BY c.created_at DESC,c.id DESC LIMIT ? OFFSET ?',
+                    (site_id, str(asset_id), limit, offset))
+            else:
+                rows = db.execute(
+                    'SELECT * FROM captures WHERE site_id=? '
+                    'ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?',
+                    (site_id, limit, offset))
+            return [capture_row(row) for row in rows]
 
     @app.get('/v1/sites/{site_id}/captures/{capture_id}/confirm', response_model=CaptureAssignment | None, dependencies=auth)
     def assignment(site_id: str, capture_id: UUID):

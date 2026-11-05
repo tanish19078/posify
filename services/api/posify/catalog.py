@@ -221,11 +221,14 @@ def install_catalog_routes(app, database, auth):
             record_event(db, site_id, 'asset.catalog_linked', str(asset_id), {'catalog_model_id': str(body.catalog_model_id)})
         return data
 
-    @app.get('/v1/sites/{site_id}/assets/{asset_id}/catalog-link', response_model=CatalogLink, dependencies=auth)
+    @app.get('/v1/sites/{site_id}/assets/{asset_id}/catalog-link', response_model=CatalogLink | None, dependencies=auth)
     def get_link(site_id: str, asset_id: UUID):
         with database.connect() as db:
-            row = db.execute('SELECT l.* FROM asset_catalog_links l JOIN assets a ON a.id=l.asset_id '
-                             'WHERE a.id=? AND a.site_id=?', (str(asset_id), site_id)).fetchone()
-        if not row:
-            raise HTTPException(404, 'Confirmed catalogue link not found in this factory')
-        return dict(row)
+            require_factory(db, site_id)
+            asset = db.execute('SELECT id FROM assets WHERE id=? AND site_id=?',
+                               (str(asset_id), site_id)).fetchone()
+            if not asset:
+                raise HTTPException(404, 'Asset not found in this factory')
+            row = db.execute('SELECT * FROM asset_catalog_links WHERE asset_id=?',
+                             (str(asset_id),)).fetchone()
+        return dict(row) if row else None

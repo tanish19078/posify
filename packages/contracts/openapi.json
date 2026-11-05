@@ -4944,7 +4944,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CatalogLink"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CatalogLink"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Link V1 Sites  Site Id  Assets  Asset Id  Catalog Link Get"
                 }
               }
             },
@@ -5242,6 +5250,23 @@
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Id"
             }
           }
         ],

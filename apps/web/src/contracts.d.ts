@@ -3140,7 +3140,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogLink"];
+                    "application/json": components["schemas"]["CatalogLink"] | null;
                 };
             };
             /** @description Validation Error */
@@ -3267,6 +3267,7 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                asset_id?: string | null;
             };
             header?: never;
             path: {

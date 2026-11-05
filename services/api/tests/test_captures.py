@@ -175,6 +175,29 @@ def test_confirmed_capture_can_be_attached_once(client):
     assert len([e for e in audit if e['kind'] == 'inspection.evidence_attached']) == 1
 
 
+def test_capture_history_filters_by_confirmed_asset(client):
+    a, _ = setup_records(client)
+    second = client.post('/v1/assets', json={
+        **{k: v for k, v in a.items() if k not in {'id', 'revision'}},
+        'tag': 'P-105', 'serial': 'S-002',
+    }).json()
+    first_capture = upload(client).json()['capture']
+    second_capture = upload(client, data=image_bytes((641, 360))).json()['capture']
+    unassigned = upload(client, data=image_bytes((642, 360))).json()['capture']
+    for capture, asset in [(first_capture, a), (second_capture, second)]:
+        response = client.post(
+            f"/v1/sites/plant-a/captures/{capture['id']}/confirm",
+            json={'asset_id': asset['id'], 'asset_confirmed': True},
+        )
+        assert response.status_code == 200
+
+    route = '/v1/sites/plant-a/captures'
+    assert [row['id'] for row in client.get(route, params={'asset_id': a['id']}).json()] == [first_capture['id']]
+    assert [row['id'] for row in client.get(route, params={'asset_id': second['id']}).json()] == [second_capture['id']]
+    assert unassigned['id'] in [row['id'] for row in client.get(route).json()]
+    assert client.get(route, params={'asset_id': '00000000-0000-4000-8000-000000000099'}).status_code == 404
+
+
 def test_capture_assignment_cannot_cross_assets_or_sites(client):
     from test_api import start
     a, p = setup_records(client)

@@ -57,6 +57,14 @@ def test_factory_assets_share_model_not_history(client):
     assert 'serial' not in client.get('/v1/catalog/models').json()[0]
 
 
+def test_unlinked_asset_is_distinct_from_missing_asset(client):
+    asset, _ = setup_records(client)
+    path = f"/v1/sites/plant-a/assets/{asset['id']}/catalog-link"
+    assert client.get(path).status_code == 200
+    assert client.get(path).json() is None
+    assert client.get(f"/v1/sites/plant-a/assets/{uuid4()}/catalog-link").status_code == 404
+
+
 def test_wrong_model_and_reassignment_rejected(client):
     a, _ = setup_records(client)
     model = create_model(client, model='OTHER').json()
