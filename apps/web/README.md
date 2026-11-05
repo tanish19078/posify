@@ -29,6 +29,8 @@ bootstrap key, and paste its credential. The Vite proxy defaults to
 before starting Vite. Use a trusted target. Credentials are never built into JS,
 written to browser storage, or included in URLs. Refresh clears the connection.
 Factories are discovered through the authenticated membership-scoped endpoint.
+Accounts without factory access can still browse the global catalogue; curators can
+also create and publish global records without a factory membership.
 
 ## Workflows
 

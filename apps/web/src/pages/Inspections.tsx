@@ -241,10 +241,16 @@ function InspectionReview({
   const [submit, setSubmit] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const captureAssetId = detail.data?.asset_id;
   const captures = useLoad(
     (signal) =>
-      api<Capture[]>(`${sitePath(site)}/captures?limit=200`, { signal }),
-    [site],
+      captureAssetId
+        ? api<Capture[]>(
+            `${sitePath(site)}/captures?limit=200&asset_id=${segment(captureAssetId)}`,
+            { signal },
+          )
+        : Promise.resolve([]),
+    [site, captureAssetId],
   );
   const reviews = useLoad(
     (signal) =>
@@ -265,6 +271,9 @@ function InspectionReview({
   const procedure = procedures.find((p) => p.id === record.procedure_id);
   const editable =
     record.status === "open" && role !== "viewer" && !session.demo;
+  const availableCaptures = captures.data?.filter(
+    (capture) => !record.capture_ids.includes(capture.id),
+  );
   async function finish() {
     setBusy(true);
     try {
@@ -383,7 +392,12 @@ function InspectionReview({
                 <ArrowUpRight size={15} />
               </a>
             ))}
-            {editable && (
+            {captures.error && (
+              <ErrorPanel message={captures.error} retry={captures.reload} />
+            )}
+            {editable && captures.loading ? (
+              <Loading />
+            ) : editable && availableCaptures?.length ? (
               <MutationForm
                 label="Attach confirmed capture"
                 submit={async (data) => {
@@ -398,17 +412,19 @@ function InspectionReview({
                 <Field label="Capture">
                   <select name="capture" required>
                     <option value="">Select a confirmed capture…</option>
-                    {captures.data
-                      ?.filter((c) => !record.capture_ids.includes(c.id))
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.id.slice(0, 8)} · {date(c.created_at)}
-                        </option>
-                      ))}
+                    {availableCaptures.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.id.slice(0, 8)} · {date(c.created_at)}
+                      </option>
+                    ))}
                   </select>
                 </Field>
               </MutationForm>
-            )}
+            ) : editable && !captures.error ? (
+              <p className="muted">
+                No unattached captures are confirmed for this asset.
+              </p>
+            ) : null}
             {!record.capture_ids.length && !editable && (
               <p className="muted">No image evidence attached.</p>
             )}

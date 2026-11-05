@@ -64,18 +64,23 @@ export default function App() {
   }, [message]);
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if (site && (e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setSearch(true);
       }
     };
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
-  }, []);
+  }, [site]);
   const factory = session.factories.find((x) => x.id === site);
   const role = session.me.is_admin
     ? "manager"
     : session.me.memberships.find((x) => x.site_id === site)?.role || "viewer";
+  const accountRole = session.me.is_admin
+    ? "administrator"
+    : session.me.is_curator
+      ? "catalogue curator"
+      : role;
   const api = useMemo(() => makeApi(session), [session]);
   return (
     <WorkspaceContext.Provider
@@ -110,19 +115,21 @@ export default function App() {
           </a>
           <div className="workspace-label">YOUR WORKSPACE</div>
           <nav aria-label="Main navigation">
-            {navigation.map(([id, label, Icon]) => (
-              <a
-                key={id}
-                href={`#/${id}`}
-                onClick={() => setMobile(false)}
-                aria-current={page === id ? "page" : undefined}
-                className={page === id ? "active" : ""}
-              >
-                <Icon size={19} />
-                <span>{label}</span>
-                {page === id && <span className="nav-dot" />}
-              </a>
-            ))}
+            {navigation
+              .filter(([id]) => site || id === "catalogue")
+              .map(([id, label, Icon]) => (
+                <a
+                  key={id}
+                  href={`#/${id}`}
+                  onClick={() => setMobile(false)}
+                  aria-current={page === id ? "page" : undefined}
+                  className={page === id ? "active" : ""}
+                >
+                  <Icon size={19} />
+                  <span>{label}</span>
+                  {page === id && <span className="nav-dot" />}
+                </a>
+              ))}
           </nav>
           <div className="sidebar-note">
             <span className="note-icon">
@@ -132,18 +139,21 @@ export default function App() {
             <p>
               Every identification stays reviewable. You make the final call.
             </p>
-            <a href="#/captures">
-              Open capture workspace <ArrowUpRight size={14} />
+            <a href={site ? "#/captures" : "#/catalogue"}>
+              {site ? "Open capture workspace" : "Open shared catalogue"}{" "}
+              <ArrowUpRight size={14} />
             </a>
           </div>
           <nav className="nav-bottom" aria-label="Workspace tools">
-            <a
-              href="#/activity"
-              aria-current={page === "activity" ? "page" : undefined}
-            >
-              <ClipboardCheck size={18} />
-              Activity log
-            </a>
+            {site && (
+              <a
+                href="#/activity"
+                aria-current={page === "activity" ? "page" : undefined}
+              >
+                <ClipboardCheck size={18} />
+                Activity log
+              </a>
+            )}
             <button onClick={() => setConnect(true)}>
               <Settings2 size={18} />
               Connection settings
@@ -161,7 +171,7 @@ export default function App() {
             </div>
             <div>
               <strong>{session.me.name || "Workspace administrator"}</strong>
-              <span>{session.demo ? "Demo technician" : role}</span>
+              <span>{session.demo ? "Demo technician" : accountRole}</span>
             </div>
             {!session.demo && (
               <button
@@ -191,33 +201,42 @@ export default function App() {
               </button>
               <span className="top-label">WORKSPACE</span>
               <span className="top-divider" />
-              <div className="factory-picker">
-                <span className="online-dot" />
-                <select
-                  aria-label="Active factory"
-                  value={site}
-                  onChange={(e) => {
-                    setSite(e.target.value);
-                    navigate("captures");
-                  }}
-                >
-                  {session.factories.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} />
-              </div>
+              {site ? (
+                <div className="factory-picker">
+                  <span className="online-dot" />
+                  <select
+                    aria-label="Active factory"
+                    value={site}
+                    onChange={(e) => {
+                      setSite(e.target.value);
+                      navigate("captures");
+                    }}
+                  >
+                    {session.factories.map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} />
+                </div>
+              ) : (
+                <div className="factory-picker">
+                  <Library size={15} />
+                  <span>Global catalogue</span>
+                </div>
+              )}
             </div>
             <div className="topbar-right">
-              <button className="search-button" onClick={() => setSearch(true)}>
-                <Search size={16} />
-                <span>Find an asset</span>
-                <kbd>
-                  <Command size={11} /> K
-                </kbd>
-              </button>
+              {site && (
+                <button className="search-button" onClick={() => setSearch(true)}>
+                  <Search size={16} />
+                  <span>Find an asset</span>
+                  <kbd>
+                    <Command size={11} /> K
+                  </kbd>
+                </button>
+              )}
               <Badge tone={session.demo ? "neutral" : "green"}>
                 {session.demo ? "Demo workspace" : "Connected"}
               </Badge>
@@ -241,20 +260,23 @@ export default function App() {
             className="main-content"
             key={`${connectionVersion}:${session.demo}:${site}`}
           >
-            {!site ? (
+            {page === "catalogue" ? (
+              <Catalogue />
+            ) : !site ? (
               <div className="empty">
                 <h1>No factory access yet</h1>
-                <p>Ask your administrator to provision a factory membership.</p>
-                <Button onClick={() => setConnect(true)}>
-                  Connection settings
+                <p>
+                  Ask your administrator to provision a factory membership, or
+                  continue with shared catalogue knowledge.
+                </p>
+                <Button onClick={() => navigate("catalogue")}>
+                  Open global catalogue
                 </Button>
               </div>
             ) : page === "captures" ? (
               <Captures captureId={route[1]} />
             ) : page === "assets" ? (
               <Assets assetId={route[1]} />
-            ) : page === "catalogue" ? (
-              <Catalogue />
             ) : page === "knowledge" ? (
               <Knowledge />
             ) : page === "inspections" ? (
@@ -277,7 +299,7 @@ export default function App() {
               <span className="online-dot" />
               {session.demo
                 ? "Read-only demo · no changes are saved"
-                : factory?.name || site}
+                : factory?.name || "Global catalogue access"}
             </span>
             <span>Evidence. Context. A human decision.</span>
           </footer>
@@ -304,7 +326,7 @@ export default function App() {
             setConnectionVersion((x) => x + 1);
             setSite(value.factories[0]?.id || "");
             setConnect(false);
-            navigate("captures");
+            navigate(value.factories.length ? "captures" : "catalogue");
             setMessage(
               "Backend connected. Your credential is kept in memory for this tab only.",
             );
