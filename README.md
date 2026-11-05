@@ -17,6 +17,9 @@ recognition smoke case is a development example with unknown training overlap,
 not an independent accuracy benchmark. See [recognition and evaluation](docs/RECOGNITION.md)
 and [trained detector setup](docs/TRAINED_DETECTOR.md). Model weights stay outside Git.
 
+For one current, non-ML reference covering the implemented product, architecture,
+setup, operations, and backlog, see [PROJECT.md](PROJECT.md).
+
 The [earlier 22-second demo](demos/nameplate-video/README.md) presents the previous
 plate detector / raw OCR workflow. It does not demonstrate the newer field and
 catalogue checks or visual machine classification.

@@ -122,7 +122,8 @@ Request UUIDs and matching decision retries are safe. Final decisions are immuta
 
 ## Remaining deployment work
 
-SSO, browser session handling, self-service credential rotation, privileged-action
+SSO, durable browser sessions, self-service credential rotation, privileged-action
 reauthentication, rate limiting, access review and external audit export are not
-implemented. This backend uses bearer credentials supplied by an operator-managed
-client; there is no browser frontend or token storage design yet.
+implemented. The web client accepts operator-provisioned bearer credentials, keeps
+them only in React memory, and clears them on refresh or disconnect. It does not use
+cookies, local storage or IndexedDB for credentials.

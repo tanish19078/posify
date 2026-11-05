@@ -62,17 +62,17 @@ Review/correction records are read through their APIs and are not included in si
 
 ## Local PostgreSQL / worker stack
 
-The proposed Compose stack contains PostgreSQL 17, a one-shot migration service,
-the API and a separate worker. No frontend is included. Set a generated API token
-and URL-safe database password in `.env`, then run:
+The Compose stack contains the React/Nginx web client, PostgreSQL 17, a one-shot
+migration service, the API and a separate worker. Set a generated API token and
+URL-safe database password in `.env`, then run:
 
 ```bash
 mkdir -p models
 docker compose up --build
 ```
 
-The API binds to host loopback port 8000. PostgreSQL is internal to the Compose
-network. Database and captures use separate persistent volumes; provision model
+The web client and API bind to host loopback ports 8080 and 8000. PostgreSQL is
+internal to the Compose network. Database and captures use separate persistent volumes; provision model
 artifacts under `models/` and refer to their `/models/...` paths inside containers.
 The image includes Tesseract but not optional Paddle/E5/ONNX dependencies or weights.
 Ollama on a host is not reachable through container localhost; configure an explicit
