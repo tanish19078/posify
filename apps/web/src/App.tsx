@@ -1,15 +1,11 @@
-import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
   Boxes,
-  Camera,
   ChevronDown,
   CircleHelp,
   ClipboardCheck,
   Command,
-  LayoutDashboard,
   Library,
   LogOut,
   Menu,
@@ -32,15 +28,8 @@ import { Inspections } from "./pages/Inspections";
 import { Knowledge } from "./pages/Knowledge";
 import { Overview } from "./pages/Overview";
 import type { Asset, Factory, Principal, Session } from "./types";
+import { workspaceConfig } from "./workspaceConfig";
 
-const navigation: [string, string, LucideIcon][] = [
-  ["overview", "Overview", LayoutDashboard],
-  ["captures", "Captures", Camera],
-  ["assets", "Factory assets", Boxes],
-  ["catalogue", "Global catalogue", Library],
-  ["knowledge", "Knowledge", BookOpen],
-  ["inspections", "Inspections", ClipboardCheck],
-];
 export default function App() {
   const [session, setSession] = useState<Session>(demoSession);
   const [connectionVersion, setConnectionVersion] = useState(0);
@@ -51,7 +40,7 @@ export default function App() {
   const [help, setHelp] = useState(false);
   const [search, setSearch] = useState(false);
   const route = useRoute();
-  const page = route[0] || "captures";
+  const page = route[0] || workspaceConfig.defaultPage;
   useEffect(() => { window.scrollTo({top: 0, left: 0}); }, [route.join("/")]);
   const navigate = (path: string) => {
     location.hash = "/" + path;
@@ -105,44 +94,48 @@ export default function App() {
           />
         )}
         <aside className={`sidebar ${mobile ? "is-open" : ""}`}>
-          <a href="#/overview" className="brand">
+          <a href={`#/${workspaceConfig.defaultPage}`} className="brand">
             <span className="brand-mark">
               <ScanLine size={22} />
             </span>
-            <span>
-              Field<span className="brand-light">workspace</span>
+            <span className="brand-copy">
+              {workspaceConfig.name}
+              <span className="brand-light">{workspaceConfig.tagline}</span>
             </span>
           </a>
-          <div className="workspace-label">YOUR WORKSPACE</div>
           <nav aria-label="Main navigation">
-            {navigation
-              .filter(([id]) => site || id === "catalogue")
-              .map(([id, label, Icon]) => (
-                <a
-                  key={id}
-                  href={`#/${id}`}
-                  onClick={() => setMobile(false)}
-                  aria-current={page === id ? "page" : undefined}
-                  className={page === id ? "active" : ""}
-                >
-                  <Icon size={19} />
-                  <span>{label}</span>
-                  {page === id && <span className="nav-dot" />}
-                </a>
-              ))}
+            {workspaceConfig.navigation.map((group) => {
+              const visibleItems = group.items.filter(
+                (item) => site || item.id === "catalogue",
+              );
+              return visibleItems.length ? (
+                <div className="nav-group" key={group.label}>
+                  <div className="workspace-label">{group.label}</div>
+                  <div className="nav-items">
+                    {visibleItems.map(({ id, label, icon: Icon }) => (
+                      <a
+                        key={id}
+                        href={`#/${id}`}
+                        onClick={() => setMobile(false)}
+                        aria-current={page === id ? "page" : undefined}
+                        className={page === id ? "active" : ""}
+                      >
+                        <Icon size={19} />
+                        <span>{label}</span>
+                        {page === id && <span className="nav-dot" />}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })}
           </nav>
           <div className="sidebar-note">
-            <span className="note-icon">
-              <ScanLine size={19} />
+            <span className="sidebar-note-label">
+              <ScanLine size={14} />
+              CURRENT CAPABILITY
             </span>
-            <strong>Evidence comes first.</strong>
-            <p>
-              Every identification stays reviewable. You make the final call.
-            </p>
-            <a href={site ? "#/captures" : "#/catalogue"}>
-              {site ? "Open capture workspace" : "Open shared catalogue"}{" "}
-              <ArrowUpRight size={14} />
-            </a>
+            <strong>{workspaceConfig.capability}</strong>
           </div>
           <nav className="nav-bottom" aria-label="Workspace tools">
             {site && (
@@ -166,12 +159,16 @@ export default function App() {
           <div className="profile">
             <div className="avatar">
               {session.demo
-                ? "DT"
+                ? "PX"
                 : (session.me.name || "User").slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <strong>{session.me.name || "Workspace administrator"}</strong>
-              <span>{session.demo ? "Demo technician" : accountRole}</span>
+              <strong>
+                {session.demo ? "Local demo" : session.me.name || "Workspace user"}
+              </strong>
+              <span>
+                {session.demo ? "Explore without an account" : accountRole}
+              </span>
             </div>
             {!session.demo && (
               <button
@@ -199,7 +196,7 @@ export default function App() {
               >
                 <Menu size={22} />
               </button>
-              <span className="top-label">WORKSPACE</span>
+              <span className="top-label">FIELD WORKSPACE</span>
               <span className="top-divider" />
               {site ? (
                 <div className="factory-picker">
@@ -246,8 +243,8 @@ export default function App() {
             <div className="demo-banner">
               <span>
                 <span className="small-dot" />
-                Explore the workbench. Registry records are sample data;
-                detection and OCR use a real smoke-test image.
+                No signup needed. Explore a real nameplate example with sample
+                registry records. Connect your backend to analyze your own photos.
               </span>
               <button onClick={() => setConnect(true)}>
                 Connect your backend <ArrowRight size={14} />
@@ -289,7 +286,7 @@ export default function App() {
               <div className="empty">
                 <h1>Page not found</h1>
                 <Button onClick={() => navigate("captures")}>
-                  Back to captures
+                  Back to identification
                 </Button>
               </div>
             )}
@@ -402,6 +399,16 @@ function Connection({
         Use a provisioned workspace credential. Requests go to this origin’s
         API; your credential stays in memory.
       </p>
+      <div className="connection-context">
+        <Settings2 size={20} />
+        <div>
+          <strong>Your project. Your local backend.</strong>
+          <p>
+            Connection settings do not create an account. Credentials stay in
+            this tab and are cleared on refresh or disconnect.
+          </p>
+        </div>
+      </div>
       <form onSubmit={submit}>
         <Field label="Credential type">
           <select

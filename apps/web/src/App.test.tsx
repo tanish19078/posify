@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import App from "./App";
@@ -8,6 +15,48 @@ afterEach(() => {
   location.hash = "";
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+it("opens a signup-free identification demo with grouped navigation", async () => {
+  vi.stubGlobal("scrollTo", vi.fn());
+  URL.createObjectURL = vi.fn().mockReturnValue("blob:demo-image");
+  URL.revokeObjectURL = vi.fn();
+  const fetchImage = vi.fn(
+    async (_input: RequestInfo | URL) =>
+      new Response("demo-image", { headers: { "Content-Type": "image/jpeg" } }),
+  );
+  vi.stubGlobal("fetch", fetchImage);
+
+  render(<App />);
+
+  expect(
+    screen.getByRole("heading", { name: "Identify equipment" }),
+  ).toBeTruthy();
+  expect(screen.getByText(/No signup needed/)).toBeTruthy();
+  const navigation = within(
+    screen.getByRole("navigation", { name: "Main navigation" }),
+  );
+  expect(navigation.getByText("Workspace")).toBeTruthy();
+  expect(navigation.getByText("Reference")).toBeTruthy();
+  expect(
+    navigation
+      .getByRole("link", { name: "Identify equipment" })
+      .getAttribute("aria-current"),
+  ).toBe("page");
+  expect(
+    navigation
+      .getByRole("link", { name: "Global catalogue" })
+      .getAttribute("href"),
+  ).toBe("#/catalogue");
+  expect(screen.queryByRole("dialog")).toBeNull();
+
+  const analyze = await screen.findByRole("button", { name: "Run again" });
+  expect((analyze as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText(/Recorded demo result/)).toBeTruthy();
+  await waitFor(() => expect(fetchImage).toHaveBeenCalled());
+  expect(
+    fetchImage.mock.calls.every(([input]) => String(input).startsWith("/images/")),
+  ).toBe(true);
 });
 
 it("opens the global catalogue for a curator without factory access", async () => {
