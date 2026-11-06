@@ -1,6 +1,6 @@
 # Posify: Current System Documentation
 
-Last reviewed: 2026-11-05
+Last reviewed: 2026-11-06
 
 This is the canonical, single-file description of the implemented Posify
 application. It covers the product, architecture, workflows, setup, operations,
@@ -26,7 +26,9 @@ confirmed asset assignment.
 
 The repository currently implements:
 
-- A responsive React operator workspace with demo and live API modes.
+- A responsive navy-and-coral React workspace with a signup-free demo and optional
+  live API connection. Identification is the default screen, with grouped
+  navigation, top-level analysis controls and evidence-driven review progress.
 - Organizations, factories, named users, factory memberships, and global flags.
 - Opaque bearer credentials with expiry, revocation, and digest-only storage.
 - A factory registry for installed assets with revision-protected metadata edits.

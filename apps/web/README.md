@@ -1,10 +1,24 @@
-# Field workspace
+# Posify web workspace
 
 The web client for equipment evidence, factory assets and traceable inspections.
 React, TypeScript and Vite; self-hosted DM Sans / Manrope fonts and Lucide icons.
-The Warm Workbench design uses a light canvas, olive actions and explicit review
-boundaries. It includes responsive navigation, keyboard search, native modal
-dialogs, empty/error states and reduced-motion support.
+The navy-and-coral design uses navy navigation and image surfaces, coral actions,
+and a light content canvas. Identification is the default screen; operational
+pages and reference material are grouped separately. It includes responsive
+navigation, keyboard search, native modal dialogs, explicit review boundaries,
+empty/error states and reduced-motion support. Browsing the demo needs no signup.
+
+## Frontend configuration
+
+- `src/theme.css` owns the semantic palette, surface colors, and shared radii.
+- `src/workspaceConfig.ts` owns branding, navigation groups, the default page,
+  and the currently supported analysis label.
+- `src/style.css` owns component layout and responsive behavior using those tokens.
+- API proxy configuration remains server-side in `vite.config.ts` through
+  `POSIFY_API_URL`. Do not put credentials or arbitrary API targets in UI config.
+
+See [the frontend roadmap](../../docs/FRONTEND_REDESIGN.md) for the next usability
+increments. New training, signup flows, and 3D are outside this redesign.
 
 ## Run
 
@@ -34,7 +48,8 @@ also create and publish global records without a factory membership.
 
 ## Workflows
 
-- **Captures:** raw PNG/JPEG uploads, bounded history, image zoom/crop, measured
+- **Identify equipment** (the existing capture route): raw PNG/JPEG uploads,
+  bounded history, image zoom/crop, measured
   detection overlays, structured source-linked fields, catalogue agreement checks, raw OCR, durable worker jobs, cancellation and explicit
   human confirmation. A score never establishes asset identity.
 - **Factory assets:** filter and register physical assets, inspect records,
