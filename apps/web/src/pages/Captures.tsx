@@ -48,9 +48,9 @@ export default function Captures({ captureId }: { captureId?: string }) {
   return (
     <>
       <PageHead
-        eyebrow="IDENTIFY / REVIEW / CONFIRM"
-        title="Capture review"
-        description="Turn a field photo into evidence you can work with."
+        eyebrow="INDUSTRIAL VISION / NAMEPLATE + OCR"
+        title="Identify equipment"
+        description="Start with a nameplate photo. Review the evidence and connect it to the right asset."
         actions={
           <Button disabled={role === "viewer"} onClick={() => setUpload(true)}>
             <ImagePlus size={17} />
@@ -58,23 +58,9 @@ export default function Captures({ captureId }: { captureId?: string }) {
           </Button>
         }
       />
-      <div className="workflow-strip">
-        <span className="complete">
-          <span>01</span> Capture
-        </span>
-        <ChevronRight size={14} />
-        <span className="current">
-          <span>02</span> Review evidence
-        </span>
-        <ChevronRight size={14} />
-        <span>
-          <span>03</span> Confirm asset
-        </span>
-        <div className="workflow-note">
-          <ShieldCheck size={15} />
-          You make the final call
-        </div>
-      </div>
+      {!list.loading && !list.error && !selected && (
+        <CaptureWorkflow stage="capture" />
+      )}
       {list.loading ? (
         <Loading />
       ) : list.error ? (
@@ -104,6 +90,7 @@ export default function Captures({ captureId }: { captureId?: string }) {
                 <button
                   key={capture.id}
                   className={selected === capture.id ? "selected" : ""}
+                  aria-pressed={selected === capture.id}
                   onClick={() => navigate(`captures/${capture.id}`)}
                 >
                   <FileImage size={15} />
@@ -131,6 +118,48 @@ export default function Captures({ captureId }: { captureId?: string }) {
     </>
   );
 }
+function CaptureWorkflow({
+  stage,
+}: {
+  stage: "capture" | "review" | "confirmed";
+}) {
+  return (
+    <div
+      className="workflow-strip"
+      role="group"
+      aria-label="Identification progress"
+    >
+      <span
+        className={stage === "capture" ? "current" : "complete"}
+        aria-current={stage === "capture" ? "step" : undefined}
+      >
+        <span>01</span> Capture
+      </span>
+      <ChevronRight size={14} />
+      <span
+        className={
+          stage === "confirmed"
+            ? "complete"
+            : stage === "review"
+              ? "current"
+              : ""
+        }
+        aria-current={stage === "review" ? "step" : undefined}
+      >
+        <span>02</span> Review evidence
+      </span>
+      <ChevronRight size={14} />
+      <span className={stage === "confirmed" ? "complete" : ""}>
+        <span>03</span> Confirm asset
+      </span>
+      <div className="workflow-note">
+        <ShieldCheck size={15} />
+        {stage === "confirmed" ? "Asset link confirmed" : "You confirm the identity"}
+      </div>
+    </div>
+  );
+}
+
 function UploadModal({
   close,
   saved,
@@ -425,10 +454,11 @@ function Review({ id }: { id: string }) {
   return (
     <>
       {error && <ErrorPanel message={error} />}
+      <CaptureWorkflow stage={assignment.data ? "confirmed" : "review"} />
       <div className="review-grid">
         <Panel
           className="capture-panel"
-          title="The original evidence"
+          title="Source image"
           caption={`${capture.width} × ${capture.height} px · ${date(capture.created_at)}`}
           action={
             <Badge tone="neutral">
@@ -525,10 +555,52 @@ function Review({ id }: { id: string }) {
         </Panel>
         <Panel
           className="evidence-panel"
-          title="What the image tells us"
+          title="Evidence & possible matches"
           caption="Structured fields, source evidence and catalogue agreement."
           action={<ScanLine size={19} />}
         >
+          <div className="analysis-controls">
+            <select
+              aria-label="Analysis mode"
+              value={mode}
+              onChange={(e) => setMode(e.target.value as typeof mode)}
+            >
+              <option value="detect_ocr">Nameplate detection + OCR</option>
+              <option value="ocr">Full image OCR only</option>
+            </select>
+            <Button
+              variant="primary"
+              busy={busy}
+              disabled={
+                processing ||
+                recoveredJobs.loading ||
+                !!recoveredJobs.error ||
+                session.demo ||
+                role === "viewer"
+              }
+              onClick={analyze}
+            >
+              <ScanLine size={16} />
+              {latest ? "Run again" : "Analyze capture"}
+            </Button>
+          </div>
+          {processing && (
+            <div className="job-state" role="status">
+              <Loader2 className="spin" size={16} />
+              <span>{readable(job!.status)} · Waiting for worker updates</span>
+              <button onClick={cancel} disabled={busy}>
+                Cancel
+              </button>
+            </div>
+          )}
+          {job?.status === "failed" && (
+            <ErrorPanel message={analysisErrorMessage(job.error_code)} />
+          )}
+          {session.demo && (
+            <div className="analysis-mode-note">
+              Recorded demo result. Connect your backend to analyze your own photos.
+            </div>
+          )}
           {analyses.loading ? (
             <Loading />
           ) : analyses.error ? (
@@ -635,43 +707,6 @@ function Review({ id }: { id: string }) {
             <Empty title="Ready when you are">
               Run analysis to locate the nameplate and extract readable text.
             </Empty>
-          )}
-          <div className="analysis-controls">
-            <select
-              aria-label="Analysis mode"
-              value={mode}
-              onChange={(e) => setMode(e.target.value as typeof mode)}
-            >
-              <option value="detect_ocr">Nameplate detection + OCR</option>
-              <option value="ocr">Full image OCR only</option>
-            </select>
-            <Button
-              variant="secondary"
-              busy={busy}
-              disabled={
-                processing ||
-                recoveredJobs.loading ||
-                !!recoveredJobs.error ||
-                session.demo ||
-                role === "viewer"
-              }
-              onClick={analyze}
-            >
-              <ScanLine size={16} />
-              {latest ? "Run again" : "Analyze capture"}
-            </Button>
-          </div>
-          {processing && (
-            <div className="job-state" role="status">
-              <Loader2 className="spin" size={16} />
-              <span>{readable(job!.status)} · Waiting for worker updates</span>
-              <button onClick={cancel} disabled={busy}>
-                Cancel
-              </button>
-            </div>
-          )}
-          {job?.status === "failed" && (
-            <ErrorPanel message={analysisErrorMessage(job.error_code)} />
           )}
         </Panel>
       </div>

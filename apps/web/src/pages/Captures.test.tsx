@@ -62,6 +62,10 @@ it("requires asset selection, physical attestation and a final confirmation befo
   );
   const user = userEvent.setup();
   const button = await screen.findByRole("button", { name: /Confirm asset/ });
+  const progress = screen.getByRole("group", { name: "Identification progress" });
+  expect(
+    progress.querySelector('[aria-current="step"]')?.textContent,
+  ).toContain("Review evidence");
   expect((button as HTMLButtonElement).disabled).toBe(true);
   await user.selectOptions(
     screen.getByRole("combobox", { name: "Factory asset" }),
@@ -78,6 +82,8 @@ it("requires asset selection, physical attestation and a final confirmation befo
   expect(confirmed).toBe(false);
   await user.click(screen.getByRole("button", { name: "Confirm identity" }));
   await waitFor(() => expect(confirmed).toBe(true));
+  expect(await screen.findByText("Asset link confirmed")).toBeTruthy();
+  expect(progress.querySelector('[aria-current="step"]')).toBeNull();
   const calls = vi
     .mocked(api)
     .mock.calls.filter(([, init]) => init?.method === "POST");
