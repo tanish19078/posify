@@ -33,13 +33,13 @@ export function Overview() {
   return (
     <>
       <PageHead
-        eyebrow="YOUR FACILITY / AT A GLANCE"
-        title="A little clarity for the field."
+        eyebrow="WORKSPACE / OVERVIEW"
+        title="Your equipment, connected."
         description="Pick up your next capture, review the registry or continue an inspection."
         actions={
           <a className="button primary" href="#/captures">
             <Camera size={17} />
-            Open capture workspace
+            Identify equipment
           </a>
         }
       />
@@ -77,17 +77,17 @@ export function Overview() {
           <div className="overview-grid">
             <a className="overview-feature" href="#/captures">
               <div>
-                <span className="eyebrow">THE CAPTURE WORKBENCH</span>
+                <span className="eyebrow">FROM PHOTO TO RECORD</span>
                 <h2>
-                  A photo.
-                  <br />A reviewable result.
+                  Start with a photo.
+                  <br />Keep the evidence.
                 </h2>
                 <p>
                   Locate the plate, examine the text and confirm the physical
                   asset.
                 </p>
                 <span className="button primary">
-                  Review captures <ArrowRight size={16} />
+                  Open identification <ArrowRight size={16} />
                 </span>
               </div>
               <div className="feature-illustration">
@@ -139,27 +139,27 @@ export function Overview() {
 function ScanIcon() {
   return (
     <svg viewBox="0 0 240 210" fill="none" aria-hidden="true">
-      <rect x="25" y="25" width="180" height="155" rx="18" fill="#e4e8dc" />
+      <rect x="25" y="25" width="180" height="155" rx="18" fill="var(--navy-surface)" />
       <rect
         x="50"
         y="65"
         width="130"
         height="82"
         rx="6"
-        fill="#fffefa"
-        stroke="#8b987d"
+        fill="var(--navy-deep)"
+        stroke="var(--navy-border)"
       />
       <path
         d="M65 85h74m-74 15h98m-98 15h60m-60 15h87"
-        stroke="#b7bcae"
+        stroke="var(--on-dark-muted)"
         strokeWidth="4"
       />
       <path
         d="M40 80V55h25m100 0h25v25m0 50v25h-25m-100 0H40v-25"
-        stroke="#53644c"
+        stroke="var(--coral)"
         strokeWidth="3"
       />
-      <path d="M25 109h181" stroke="#bf9b4a" strokeWidth="2" />
+      <path d="M25 109h181" stroke="var(--coral)" strokeWidth="2" />
     </svg>
   );
 }

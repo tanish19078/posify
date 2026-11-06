@@ -74,7 +74,7 @@ export function PageHead({
   return (
     <div className="page-head">
       <div>
-        <div className="eyebrow">{eyebrow || "FIELD WORKSPACE"}</div>
+        <div className="eyebrow">{eyebrow || "POSIFY / FIELD WORKSPACE"}</div>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
