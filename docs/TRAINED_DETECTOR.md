@@ -115,8 +115,20 @@ evaluation remain necessary before setting operational thresholds.
 
 ```bash
 POSIFY_TEST_DETECTOR_MANIFEST=models/nameplate-v1/manifest.json pytest -q
+POSIFY_TEST_DETECTOR_MANIFEST=models/equipment-v2/manifest.json pytest -q
 ```
 
-Local verification passed all 111 tests including the actual artifact reference
-check. CI installs/imports the pinned CPU runtime and runs 110 tests on each database;
-the weight-dependent reference test is skipped because weights are not committed.
+Local verification passed all tests including actual artifact reference checks for both `nameplate-detector@v1` and `equipment-detector@v2`. CI installs/imports the pinned CPU runtime and runs tests on each database; the weight-dependent reference test is skipped because weights are not committed.
+
+## Multi-class `equipment-detector@v2` (Colab NVIDIA L4 export)
+
+A 4-class YOLO11n static FP32 ONNX detector (`equipment-detector@v2`) trained on Google Colab (NVIDIA L4 GPU, 25 epochs, `[1,3,640,640]` -> `[1,8,8400]`) is provisioned at `models/equipment-v2/`:
+
+- **Classes**: `["nameplate", "pump", "valve", "motor"]`
+- **Artifact SHA-256**: `6c2bb7916d721c312b4dbac6e0d42467c7798b42d2ba1ced766d139a1e1e63f5`
+- **Dataset fingerprint**: `acf44ae62d8a3b7454360d1ed654e9ede32d622fe95a014b67a322b66997f3a1` (80 train / 20 val / 20 test scenes built via `ml_starter/build_colab_dataset.py` using public Commons nameplate textures and procedural multi-class equipment compositions).
+- **Held-out test split metrics** (synthetic/composite test split, not an industrial field benchmark):
+  - Aggregate: precision `0.9448`, recall `0.9919`, mAP@50 `0.9950`, mAP@50–95 `0.9414`
+  - Per-class mAP@50–95: `nameplate` `0.9504`, `pump` `0.9124`, `valve` `0.9399`, `motor` `0.9629`
+- **Reference conformance**: verified on CPU (`onnxruntime==1.31.1`) against a real test-image input tensor (`max_abs_error = 0.000702`, warm CPU inference `~76.4 ms`).
+- **Operational boundary**: In `detect_ocr` mode, only `nameplate`/`label` detections are cropped for OCR reading while `pump`/`valve`/`motor` detections remain visible as visual proposals and category corroboration. Category detections never auto-confirm physical asset identity.

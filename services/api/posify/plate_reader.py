@@ -109,6 +109,39 @@ def prepare(image, matrix, angle=0, contrast=False):
     return image,transform
 
 
+def decode_qr_codes(image):
+    """Decode any QR codes on a plate crop and map their bounding boxes."""
+    if min(image.size) < 24 or not importlib.util.find_spec('cv2'):
+        return []
+    import cv2
+    cv2.setNumThreads(1)
+    arr = np.asarray(image.convert('RGB'))
+    detector = cv2.QRCodeDetector()
+    try:
+        ok, decoded, points, _ = detector.detectAndDecodeMulti(arr)
+    except Exception:
+        return []
+    if not ok or not decoded or points is None:
+        return []
+    lines = []
+    for payload, poly in zip(decoded, points):
+        if not payload or not payload.strip():
+            continue
+        xs = [float(p[0]) for p in poly]
+        ys = [float(p[1]) for p in poly]
+        box = (
+            max(0, min(image.size[0], math.floor(min(xs)))),
+            max(0, min(image.size[1], math.floor(min(ys)))),
+            max(0, min(image.size[0], math.ceil(max(xs)))),
+            max(0, min(image.size[1], math.ceil(max(ys)))),
+        )
+        for text_line in payload.splitlines():
+            cleaned = text_line.strip()
+            if cleaned:
+                lines.append(OCRLine(text=cleaned, confidence=1.0, box=box))
+    return lines
+
+
 def read_plate(ocr, image_path, region_index=0, max_attempts=8, seconds=18):
     """Read a crop without selecting a pass using catalogue/ground-truth values."""
     if not hasattr(ocr,'recognize_variant'):
@@ -175,4 +208,11 @@ def read_plate(ocr, image_path, region_index=0, max_attempts=8, seconds=18):
     if not attempts: return [],[],warnings+['no_reading_completed']
     best=max(attempts,key=lambda a:a.quality_score);best.selected=True
     if best.quality_score<.50: warnings.append('poor_plate_readability')
-    return best.lines,attempts,warnings
+    qr_lines=decode_qr_codes(source)
+    if qr_lines:
+        attempts.append(ReadingAttempt(id=f'region-{region_index}-qr',region_index=region_index,
+            method='qr_code',rotation=0,psm=None,selected=False,quality_score=quality(qr_lines),
+            source_quad=quad,lines=qr_lines))
+    existing_texts={line.text for line in best.lines}
+    combined=list(best.lines)+[line for line in qr_lines if line.text not in existing_texts]
+    return combined,attempts,warnings

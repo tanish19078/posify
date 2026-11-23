@@ -165,3 +165,67 @@ def test_labelled_metrics_penalize_wrong_values_and_count_abstention():
     metrics=field_metrics(cases)
     assert metrics['precision']==.5 and metrics['recall']==pytest.approx(1/3)
     assert metrics['coverage']==pytest.approx(2/3)
+
+
+def test_multiclass_equipment_detection_corroborates_category_without_auto_confirming(client):
+    from posify.detector import Detection
+    item = model(client)  # ACME AB-123, category: Fixture motor
+    detections = [
+        Detection(class_id=1, label='motor', confidence=.94, box=(10, 10, 500, 400)),
+        Detection(class_id=0, label='nameplate', confidence=.91, box=(100, 100, 260, 180)),
+    ]
+    fields = extract_fields([attempt(['ACME', 'Model: AB-123'])], ['ACME'])
+    with client.app.state.database.connect() as db:
+        candidates, status, _ = catalogue_candidates(db, fields, detections)
+        assert status == 'supported_model_candidate'
+        assert candidates[0].matched_fields == ['manufacturer', 'model', 'category']
+        assert candidates[0].requires_review
+        # Visual-only detection without readable OCR text returns partial_evidence, never supported_model_candidate
+        visual_only, visual_status, _ = catalogue_candidates(db, [], detections)
+        assert visual_status == 'partial_evidence'
+        assert len(visual_only) == 1
+        assert str(visual_only[0].catalog_model_id) == item['id']
+        assert visual_only[0].status == 'partial_evidence'
+        assert visual_only[0].retrieval_basis == 'visual_category'
+        assert visual_only[0].matched_fields == ['category']
+        assert visual_only[0].missing_fields == ['manufacturer', 'model']
+        assert visual_only[0].requires_review
+
+
+def test_real_plate_edge_cases_serial_no_suffix_mot_prefix_and_iec_units():
+    lines = [
+        'SIEMENS',
+        'Perm-Magn-Mot1 HU3054-0AC01-Z',
+        'LZZBJ-11 CURRENT MEASURING INSTRUMENT',
+        '15/5A Serial No.',
+        'Fabr.-Nr.: 31074',
+        'Speed 2000 1/min',
+    ]
+    fields = extract_fields([attempt(lines)], ['SIEMENS'])
+    by_field = {(f.field, f.value, f.unit) for f in fields}
+    # '15/5A Serial No.' must never extract 'No' as a serial value
+    assert not any(f.field == 'serial' and f.value.upper().startswith('NO') for f in fields)
+    assert ('serial', '31074', None) in by_field
+    assert ('model', '1HU3054-0AC01-Z', None) in by_field
+    assert ('model', 'LZZBJ-11', None) in by_field
+    assert ('speed', '2000', '1/min') in by_field
+
+
+def test_qr_code_lines_merge_into_plate_reading_attempts(tmp_path, monkeypatch):
+    import posify.plate_reader as pr
+    image = tmp_path / 'qr_plate.png'
+    Image.new('RGB', (240, 120), 'white').save(image)
+    monkeypatch.setattr(
+        pr,
+        'decode_qr_codes',
+        lambda img: [OCRLine(text='SERIAL: QR-9001', confidence=1.0, box=(160, 10, 230, 80))],
+    )
+    class Reader:
+        engine = 'tesseract'
+        def recognize_variant(self, path, psm, timeout, **kwargs):
+            return [OCRLine(text='Manufacturer: SIEMENS', confidence=.95, box=(10, 10, 140, 30))]
+    lines, attempts, _ = read_plate(Reader(), image, max_attempts=1)
+    assert any(a.method == 'qr_code' for a in attempts)
+    assert [l.text for l in lines] == ['Manufacturer: SIEMENS', 'SERIAL: QR-9001']
+    fields = extract_fields(attempts, ['SIEMENS'])
+    assert {(f.field, f.value) for f in fields} >= {('manufacturer', 'SIEMENS'), ('serial', 'QR-9001')}
