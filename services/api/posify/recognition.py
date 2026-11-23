@@ -50,6 +50,9 @@ class EquipmentField(EvidenceModel):
     corroborating_attempts: list[str] = Field(default_factory=list)
 
 
+PLATE_LABELS = {'nameplate', 'label', 'plate', 'tag', 'rating_plate', 'data_plate'}
+
+
 class EquipmentCandidate(EvidenceModel):
     catalog_model_id: UUID
     manufacturer: str
@@ -62,7 +65,7 @@ class EquipmentCandidate(EvidenceModel):
     missing_fields: list[str]
     conflicting_fields: list[str]
     evidence_ids: list[str]
-    retrieval_basis: Literal['exact_model', 'approximate_model', 'manufacturer_only']
+    retrieval_basis: Literal['exact_model', 'approximate_model', 'manufacturer_only', 'visual_category']
     requires_review: bool = True
 
 
@@ -75,14 +78,15 @@ def normalized(value):
 LABELS = {
     'manufacturer': r'(?:manufacturer|mfr|maker)',
     'model': r'(?:model|type|typ)',
-    'serial': r'(?:serial(?:\s*(?:no\.?|number))?|s/n)',
+    'serial': r'(?:serial\s+(?:no\.?|number)|serial|s/n|fabr\.?-?\s*nr\.?)',
     'asset_tag': r'(?:asset\s*tag|asset|tag)',
     'frame': r'(?:frame)',
 }
+STOP_IDENTIFIER_VALUES = {'NO', 'NO.', 'NUMBER', 'NR', 'NR.', 'CODE', 'NONE', 'N/A'}
 CODE = re.compile(r'(?<![\w/-])(?:[0-9]\s*)?[A-Z]{1,5}\s*[A-Z0-9]{2,}(?:\s*[-/]\s*[A-Z0-9]{1,12}){1,3}(?![\w/-])', re.I)
 UNITS = {
     'voltage': r'V|VOLTS?', 'power': r'kW|HP',
-    'speed': r'RPM|r/min', 'frequency': r'Hz',
+    'speed': r'RPM|r/min|1/min', 'frequency': r'Hz',
 }
 NUMBER = r'\d{1,6}(?:[.,]\d{1,4})?(?:\s*[/–-]\s*\d{1,6}(?:[.,]\d{1,4})?)?'
 
@@ -117,7 +121,7 @@ def extract_fields(attempts, manufacturers):
             found = []
             for field, label in LABELS.items():
                 # Colon without a following space is common on real nameplates.
-                pattern = rf'(?<!\w){label}\s*(?:[:#=]\s*|\s+)([A-Z0-9][A-Z0-9 ._/-]{{0,79}})'
+                pattern = rf'(?<!\w){label}(?!\s*(?:no\.?|number|nr\.?)\b)\s*(?:[:#=]\s*|\s+)([A-Z0-9][A-Z0-9 ._/-]{{0,79}})'
                 match = re.search(pattern, text, re.I)
                 if match:
                     value = re.split(r'\s+(?:serial|model|type|tag|volts?|rpm|hz)\b|[|;]', match[1], flags=re.I)[0].strip(' .')
@@ -130,7 +134,7 @@ def extract_fields(attempts, manufacturers):
                             value=' '.join(parts[:6])
                         else:
                             value=parts[0] if parts else ''
-                    if value:
+                    if value and value.upper() not in STOP_IDENTIFIER_VALUES:
                         found.append((field, value, None, 'explicit_label'))
             for manufacturer, expression in vocabulary:
                 if expression.search(text):
@@ -143,9 +147,13 @@ def extract_fields(attempts, manufacturers):
                 elif not line.words and re.fullmatch('[A-Z]{4,24}',text.strip()) and text.strip() not in header_stop:
                     found.append(('manufacturer',text.strip(),None,'header_candidate'))
             if index < 4 and not re.search(r'\b(?:serial|s/n|asset|frame)\b', text, re.I):
-                for match in CODE.finditer(text):
+                scan_text = re.sub(r'\b(Mot)\.?(?=\d)', r'\1 ', text, flags=re.I)
+                for match in CODE.finditer(scan_text):
                     value = re.sub(r'\s+', '', match[0])
-                    if sum(c.isdigit() for c in value) >= 3 and sum(c.isalpha() for c in value) >= 2 and not re.match(r'^(?:IEC|ISO|DIN|EN)\d', value, re.I):
+                    has_digits = sum(c.isdigit() for c in value) >= 3 or bool(
+                        re.fullmatch(r'[A-Z]{3,8}-\d{2,6}(?:-[A-Z0-9]+)*', value, re.I)
+                    )
+                    if has_digits and sum(c.isalpha() for c in value) >= 2 and not re.match(r'^(?:IEC|ISO|DIN|EN|NEMA|IEEE|ANSI|IP|IM|IC)\d', value, re.I):
                         found.append(('model', value, None, 'code_candidate'))
             for field, unit_pattern in UNITS.items():
                 patterns = [rf'(?<![\w.])({NUMBER})\s*({unit_pattern})(?!\w)',
@@ -177,24 +185,47 @@ def extract_fields(attempts, manufacturers):
     return result[:100]
 
 
-def catalogue_candidates(db, fields):
+def _category_matches(category_text, equipment_labels):
+    for label in equipment_labels:
+        term = re.sub(r'[_-]+', ' ', label).strip()
+        if not term:
+            continue
+        pattern = r'(?<!\w)' + r'\s+'.join(re.escape(part) for part in term.split()) + r's?(?!\w)'
+        if re.search(pattern, category_text or '', re.I):
+            return True
+    return False
+
+
+def catalogue_candidates(db, fields, detections=None):
     reliable = [p for p in fields if p.status != 'low_confidence']
     searches = sorted({p.value for p in fields if p.field in {'manufacturer', 'model'}}, key=len, reverse=True)[:12]
-    if not searches:
+    equipment_labels = sorted({
+        d.label.strip().casefold()
+        for d in (detections or [])
+        if getattr(d, 'label', None) and d.label.strip().casefold() not in PLATE_LABELS
+    })
+    category_terms = [re.sub(r'[_-]+', ' ', label).strip() for label in equipment_labels if label][:6]
+    if not searches and not category_terms:
         return [], 'insufficient_evidence', []
     clauses, params = [], []
     for value in searches:
         escaped = value.casefold().replace('!', '!!').replace('%', '!%').replace('_', '!_')
         clauses.append("(lower(manufacturer) LIKE ? ESCAPE '!' OR lower(model) LIKE ? ESCAPE '!')")
         params.extend(['%' + escaped + '%'] * 2)
-    # Manufacturer retrieval includes approximate model suggestions, never acceptance.
+    for term in category_terms:
+        escaped = term.casefold().replace('!', '!!').replace('%', '!%').replace('_', '!_')
+        clauses.append("(lower(category) LIKE ? ESCAPE '!')")
+        params.append('%' + escaped + '%')
+    # Manufacturer and visual-category retrieval include suggestions, never automatic acceptance.
     rows = db.execute("SELECT * FROM catalog_models WHERE status='published' AND (" + ' OR '.join(clauses)
                       + ') ORDER BY manufacturer,model,variant,id LIMIT 201', params).fetchall()
     warnings = ['catalogue_retrieval_truncated'] if len(rows) > 200 else []
     candidates = []
+    regions = sorted({p.region_index for p in fields}) or [0]
     for row in rows[:200]:
         row = dict(row)
-        for region in sorted({p.region_index for p in fields}):
+        cat_match = _category_matches(row['category'], equipment_labels)
+        for region in regions:
             observed = {kind: [p for p in reliable if p.field == kind and p.region_index == region]
                         for kind in ['manufacturer', 'model']}
             matched, missing, conflicts, evidence = [], [], [], []
@@ -211,11 +242,22 @@ def catalogue_candidates(db, fields):
             exact = any(normalized(p.value) == normalized(row['model']) for p in codes)
             similarity = max([SequenceMatcher(None, normalized(p.value), normalized(row['model'])).ratio() for p in codes] or [0])
             if 'manufacturer' not in matched and not exact:
+                if cat_match and not searches:
+                    candidate = EquipmentCandidate(
+                        catalog_model_id=row['id'], manufacturer=row['manufacturer'],
+                        model=row['model'], variant=row['variant'], category=row['category'],
+                        source_ref=row['source_ref'], status='partial_evidence',
+                        matched_fields=['category'], missing_fields=['manufacturer', 'model'],
+                        conflicting_fields=conflicts, evidence_ids=[],
+                        retrieval_basis='visual_category',
+                    )
+                    candidates.append((candidate, 0.0))
                 continue
             state = 'conflicting_evidence' if conflicts else 'evidence_supported' if not missing else 'partial_evidence'
+            matched_with_cat = matched + (['category'] if cat_match else [])
             candidate = EquipmentCandidate(catalog_model_id=row['id'],manufacturer=row['manufacturer'],
                 model=row['model'],variant=row['variant'],category=row['category'],source_ref=row['source_ref'],
-                status=state,matched_fields=matched,missing_fields=missing,conflicting_fields=conflicts,
+                status=state,matched_fields=matched_with_cat,missing_fields=missing,conflicting_fields=conflicts,
                 evidence_ids=sorted(set(evidence)),retrieval_basis='exact_model' if exact else 'approximate_model' if similarity >= .65 else 'manufacturer_only')
             candidates.append((candidate, similarity))
     # Keep distinct variants visible; a shared model does not identify a physical asset.

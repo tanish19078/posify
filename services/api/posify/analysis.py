@@ -14,7 +14,7 @@ from posify.audit import record_event
 from posify.matching import extract_identifiers, match_identifiers
 from posify.ocr import OCRLine
 from posify.plate_reader import read_plate
-from posify.recognition import ReadingAttempt, extract_fields, catalogue_candidates
+from posify.recognition import PLATE_LABELS, ReadingAttempt, extract_fields, catalogue_candidates
 
 
 class ComponentHTTPError(HTTPException):
@@ -43,7 +43,7 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
     ocr = app.state.ocr
     if mode == 'detect_ocr':
         detections, revision = run_component('detector', app.state.detector.predict, image_path)
-        regions = [d for d in detections if d.label.casefold() in {'nameplate', 'label'}] or detections
+        regions = [d for d in detections if d.label.strip().casefold() in PLATE_LABELS]
         if len(regions) > 8:
             warnings.append('ocr_limited_to_first_eight_regions')
         regions = regions[:8]
@@ -77,7 +77,7 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
                         reading.source_quad=[(x+box[0],y+box[1]) for x,y in reading.source_quad]
                     attempts.extend(reads);warnings.extend(flags)
         else:
-            warnings.append('no_detections_full_image_ocr')
+            warnings.append('no_nameplate_detection_full_image_ocr' if detections else 'no_detections_full_image_ocr')
             lines = run_component('ocr', ocr.recognize, image_path)
     elif mode == 'ocr':
         lines = run_component('ocr', ocr.recognize, image_path)
@@ -97,7 +97,7 @@ def compute_analysis(app, database, root, site_id, capture_id, mode='ocr', analy
             'SELECT DISTINCT manufacturer FROM assets WHERE site_id=? ORDER BY manufacturer LIMIT 501',(site_id,))]
         if len(manufacturers)>1000: warnings.append('manufacturer_vocabulary_truncated')
         fields=extract_fields(attempts,sorted(set(manufacturers[:1000])))
-        equipment,status,flags=catalogue_candidates(db,fields)
+        equipment,status,flags=catalogue_candidates(db,fields,detections)
         warnings.extend(flags)
         if any(field.status=='conflicting' and field.field in {'serial','asset_tag'} for field in fields):
             match={'status':'ambiguous_identifiers','candidates':[]}

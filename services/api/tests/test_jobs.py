@@ -121,6 +121,35 @@ def test_no_detections_has_explicit_whole_image_ocr_fallback(client):
     assert result['pipeline_warnings'] == ['no_detections_full_image_ocr']
 
 
+def test_multiclass_detector_crops_only_nameplate_and_falls_back_when_equipment_only(client):
+    setup_records(client)
+    capture = upload(client).json()['capture']
+    class MultiClassDetector:
+        def predict(self, path):
+            return [
+                Detection(class_id=1, label='pump', confidence=.98, box=(10, 10, 600, 350)),
+                Detection(class_id=0, label='nameplate', confidence=.91, box=(100, 50, 300, 150)),
+            ], 'equipment-detector@v2'
+    client.app.state.detector = MultiClassDetector()
+    client.app.state.ocr = FakeOCR([OCRLine(text='TAG: P-104', confidence=.99, box=(10, 20, 150, 40))])
+    job = enqueue(client, capture, mode='detect_ocr').json()
+    assert work_once(client.app)
+    result = client.get(f"/v1/sites/plant-a/jobs/{job['id']}").json()['result']
+    assert [d['label'] for d in result['detections']] == ['pump', 'nameplate']
+    # OCR coordinate offset uses the nameplate box (100, 50), not the outer pump box (10, 10)
+    assert result['lines'][0]['box'] == [110, 70, 250, 90]
+
+    class EquipmentOnlyDetector:
+        def predict(self, path):
+            return [Detection(class_id=1, label='pump', confidence=.94, box=(10, 10, 600, 350))], 'equipment-detector@v2'
+    client.app.state.detector = EquipmentOnlyDetector()
+    client.app.state.ocr = FakeOCR([])
+    job2 = enqueue(client, capture, mode='detect_ocr').json()
+    assert work_once(client.app)
+    result2 = client.get(f"/v1/sites/plant-a/jobs/{job2['id']}").json()['result']
+    assert 'no_nameplate_detection_full_image_ocr' in result2['pipeline_warnings']
+
+
 def test_cancellation_invalidates_running_claim_and_is_replay_safe(client):
     capture = upload(client).json()['capture']
     job = enqueue(client, capture).json()

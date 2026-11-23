@@ -1168,7 +1168,8 @@
             "enum": [
               "exact_model",
               "approximate_model",
-              "manufacturer_only"
+              "manufacturer_only",
+              "visual_category"
             ],
             "title": "Retrieval Basis",
             "type": "string"
