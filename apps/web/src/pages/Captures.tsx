@@ -396,7 +396,19 @@ function Review({ id }: { id: string }) {
   if (meta.error)
     return <ErrorPanel message={meta.error} retry={meta.reload} />;
   const capture = meta.data!;
-  const box = latest?.detections[0]?.box;
+  const plateLabels = new Set([
+    "nameplate",
+    "label",
+    "plate",
+    "tag",
+    "rating_plate",
+    "data_plate",
+  ]);
+  const plateDetection =
+    latest?.detections.find((d) =>
+      plateLabels.has(d.label.trim().toLowerCase()),
+    ) || latest?.detections[0];
+  const box = plateDetection?.box;
   const activeBox = evidenceBox || (crop ? box : null);
   const confirmedAsset = assets.data?.find(
     (x) => x.id === assignment.data?.asset_id,

@@ -1273,7 +1273,7 @@ export interface components {
              * Retrieval Basis
              * @enum {string}
              */
-            retrieval_basis: "exact_model" | "approximate_model" | "manufacturer_only";
+            retrieval_basis: "exact_model" | "approximate_model" | "manufacturer_only" | "visual_category";
             /** Source Ref */
             source_ref: string;
             /**

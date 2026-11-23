@@ -57,3 +57,21 @@ it("shows a field proposal as unverified evidence and opens its exact source pix
   expect(inspect).toHaveBeenCalledWith([10, 20, 100, 45]);
   expect(screen.queryByRole("button", { name: /confirm/i })).toBeNull();
 });
+
+it("renders multi-class equipment detections as visual proposals and focuses their bounding box", async () => {
+  const inspect = vi.fn();
+  const analysis: Analysis = {
+    ...demoAnalysis,
+    recognition_version: "plate-evidence-v1",
+    detections: [
+      { class_id: 1, label: "centrifugal_pump", confidence: 0.912, box: [15, 25, 480, 360] },
+      { class_id: 0, label: "nameplate", confidence: 0.884, box: [120, 140, 260, 210] },
+    ],
+  };
+  render(<EquipmentEvidence analysis={analysis} inspect={inspect} />);
+  expect(screen.getByText("Detected equipment category")).toBeTruthy();
+  expect(screen.getByText("centrifugal pump")).toBeTruthy();
+  expect(screen.getByText("Visual proposal")).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: "View region" }));
+  expect(inspect).toHaveBeenCalledWith([15, 25, 480, 360]);
+});

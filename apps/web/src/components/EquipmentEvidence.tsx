@@ -24,6 +24,15 @@ const statuses: Record<string, string> = {
   not_evaluated: "Structured recognition has not run",
 };
 
+const plateLabels = new Set([
+  "nameplate",
+  "label",
+  "plate",
+  "tag",
+  "rating_plate",
+  "data_plate",
+]);
+
 export default function EquipmentEvidence({
   analysis,
   inspect,
@@ -34,6 +43,9 @@ export default function EquipmentEvidence({
   const fields = analysis.equipment_fields || [];
   const attempts = analysis.reading_attempts || [];
   const candidates = analysis.equipment_candidates || [];
+  const equipmentDetections = (analysis.detections || []).filter(
+    (d) => !plateLabels.has(d.label.trim().toLowerCase()),
+  );
   const ordered = Object.keys(names).filter((name) =>
     fields.some((field) => field.field === name),
   );
@@ -58,6 +70,35 @@ export default function EquipmentEvidence({
         <span>STRUCTURED EQUIPMENT EVIDENCE</span>
         <Badge tone="amber">Review required</Badge>
       </div>
+      {equipmentDetections.length > 0 && (
+        <div className="field-evidence-list">
+          <section className="field-evidence-group">
+            <h3>Detected equipment category</h3>
+            {equipmentDetections.map((det, idx) => (
+              <div className="field-evidence-value observed" key={`${det.label}-${idx}`}>
+                <div className="field-evidence-heading">
+                  <code>{readable(det.label)}</code>
+                  <Badge tone="neutral">Visual proposal</Badge>
+                </div>
+                <div className="field-evidence-foot">
+                  <small>
+                    Detector score: {det.confidence.toFixed(3)} · Category alone does not identify an asset
+                  </small>
+                  <button
+                    className="source-button"
+                    onClick={() =>
+                      inspect(det.box as [number, number, number, number])
+                    }
+                  >
+                    <Eye size={13} />
+                    View region
+                  </button>
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
       {!ordered.length && (
         <div className="recognition-empty">
           <Info size={17} />
