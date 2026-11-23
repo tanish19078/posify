@@ -9,7 +9,7 @@
     {"manufacturer":"ZHEJIANG SANAI TRANSFORMER","model":"LZZBJ-12","variant":"15/5A","category":"Synthetic distractor","source_ref":"Synthetic near-code distractor for evaluation; not an asserted real model"}
   ],
   "cases": [
-    {"id":"siemens-cutaway-motor","image":"../apps/web/public/images/machine.jpg","expected_fields":{"manufacturer":"SIEMENS","model":"1HU3054-0AC01-Z"}},
-    {"id":"sanai-current-transformer","image":"../apps/web/public/images/nameplate.jpg","expected_fields":{"manufacturer":"ZHEJIANG SANAI TRANSFORMER","model":"LZZBJ-11","frequency":"50"}}
+    {"id":"siemens-cutaway-motor","image":"../apps/web/public/images/machine.jpg","expected_fields":{"manufacturer":"SIEMENS","model":"1HU3054-0AC01-Z","speed":"2000","power":"0.38"}},
+    {"id":"sanai-current-transformer","image":"../apps/web/public/images/nameplate.jpg","expected_fields":{"manufacturer":"ZHEJIANG SANAI TRANSFORMER","model":"LZZBJ-11","serial":"31074","frequency":"50"}}
   ]
 }

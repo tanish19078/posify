@@ -108,10 +108,10 @@ and [OpenCV perspective transformations](https://docs.opencv.org/4.13.0/da/d6e/t
 
 ## Recorded development observation
 
-On the two-image development smoke set ([examples/recognition_smoke.json](../examples/recognition_smoke.json): the Siemens permanent-magnet motor `machine.jpg` and the Zhejiang Sanai current measuring transformer `nameplate.jpg`), the PP-OCRv6 reader recovered all five annotated fields (`precision=1.0`, `recall=1.0`, `coverage=1.0`):
-- `SIEMENS` and `1HU3054-0AC01-Z` on `machine.jpg`
-- `ZHEJIANG SANAI TRANSFORMER`, `LZZBJ-11` and `50 Hz` on `nameplate.jpg`
+On the two-image development smoke set ([examples/recognition_smoke.json](../examples/recognition_smoke.json): the Siemens permanent-magnet motor `machine.jpg` and the Zhejiang Sanai current measuring transformer `nameplate.jpg`), the PP-OCRv6 reader recovered all eight annotated fields (`precision=1.0`, `recall=1.0`, `coverage=1.0`):
+- `SIEMENS`, `1HU3054-0AC01-Z`, `2000 1/min` and `0.38 kW` on `machine.jpg`
+- `ZHEJIANG SANAI TRANSFORMER`, `LZZBJ-11`, `Serial No. 31074` and `50 Hz` on `nameplate.jpg`
 
-The Tesseract single-crop baseline recovered 1 of 5 fields (`precision=1.0`, `recall=0.2`, `coverage=0.2`). Matching catalogue fixtures were supported while synthetic near-code distractors (`1HU3054-0AC02-Z` and `LZZBJ-12`) were contradicted. When OpenCV is installed, `plate_reader.py` also checks nameplate crops for QR codes (`cv2.QRCodeDetector`) and merges decoded lines with their bounding boxes as an explicit `qr_code` reading attempt. This two-image check has unknown training overlap and is not an industrial accuracy or latency guarantee.
+The Tesseract single-crop baseline recovered 1 of 8 fields (`precision=1.0`, `recall=0.125`, `coverage=0.125`). Matching catalogue fixtures were supported while synthetic near-code distractors (`1HU3054-0AC02-Z` and `LZZBJ-12`) were contradicted. When OpenCV is installed, `plate_reader.py` also checks nameplate crops for QR codes (`cv2.QRCodeDetector`) and merges decoded lines with their bounding boxes as an explicit `qr_code` reading attempt. This two-image check has unknown training overlap and is not an industrial accuracy or latency guarantee.
 The default web demo stores the actual neural output, including reading attempts;
 its factory asset/inspection records remain explicitly fictional.

@@ -229,3 +229,27 @@ def test_qr_code_lines_merge_into_plate_reading_attempts(tmp_path, monkeypatch):
     assert [l.text for l in lines] == ['Manufacturer: SIEMENS', 'SERIAL: QR-9001']
     fields = extract_fields(attempts, ['SIEMENS'])
     assert {(f.field, f.value) for f in fields} >= {('manufacturer', 'SIEMENS'), ('serial', 'QR-9001')}
+
+
+def test_two_cell_spatial_tabular_units_trailing_label_and_corporate_entity():
+    reading = ReadingAttempt(
+        id='spatial-1', region_index=0, method='fixture', rotation=0, psm=None, selected=True,
+        lines=[
+            OCRLine(text='ZHEJIANG SANAI TRANSFORMER CO,LTD', confidence=.98, box=(480, 640, 1410, 810)),
+            OCRLine(text='15/5A Serial No.', confidence=.98, box=(887, 357, 1285, 443)),
+            OCRLine(text='31074', confidence=1.0, box=(1314, 355, 1450, 417)),
+            OCRLine(text='1/min', confidence=.97, box=(935, 109, 994, 133)),
+            OCRLine(text='2000', confidence=1.0, box=(933, 128, 988, 145)),
+            OCRLine(text='kW', confidence=.94, box=(1155, 110, 1197, 132)),
+            OCRLine(text='0.38', confidence=.97, box=(1152, 125, 1198, 146)),
+            OCRLine(text='174', confidence=.90, box=(811, 126, 846, 148)),
+        ],
+    )
+    fields = extract_fields([reading], [])
+    by_key = {(f.field, f.value, f.unit) for f in fields}
+    assert ('manufacturer', 'ZHEJIANG SANAI TRANSFORMER', None) in by_key
+    assert ('serial', '31074', None) in by_key
+    assert ('speed', '2000', '1/min') in by_key
+    assert ('power', '0.38', 'kW') in by_key
+    # Unpaired '174' without an aligned unit header must not be misassigned to 1/min or kW
+    assert not any(f.value == '174' for f in fields)

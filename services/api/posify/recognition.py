@@ -84,6 +84,11 @@ LABELS = {
 }
 STOP_IDENTIFIER_VALUES = {'NO', 'NO.', 'NUMBER', 'NR', 'NR.', 'CODE', 'NONE', 'N/A'}
 CODE = re.compile(r'(?<![\w/-])(?:[0-9]\s*)?[A-Z]{1,5}\s*[A-Z0-9]{2,}(?:\s*[-/]\s*[A-Z0-9]{1,12}){1,3}(?![\w/-])', re.I)
+CORP_ENTITY = re.compile(
+    r'^([A-Z][A-Z0-9 &.-]{2,60}?)\s+(?:CO\.?\s*,?\s*LTD\.?|GMBH(?:\s*&\s*CO\.?\s*KG)?|INC\.?|CORP\.?|CORPORATION|LIMITED)\.?$',
+    re.I,
+)
+GERMAN_NR_SERIAL = re.compile(r'^(?:Fabr\.?-?\s*)?Nr\.?\s*([A-Z0-9]{1,6}(?:\s+\d{2,6}){2,5})$', re.I)
 UNITS = {
     'voltage': r'V|VOLTS?', 'power': r'kW|HP',
     'speed': r'RPM|r/min|1/min', 'frequency': r'Hz',
@@ -139,6 +144,14 @@ def extract_fields(attempts, manufacturers):
             for manufacturer, expression in vocabulary:
                 if expression.search(text):
                     found.append(('manufacturer', manufacturer, None, 'catalogue_vocabulary'))
+            if not any(f[0] == 'manufacturer' for f in found):
+                corp_match = CORP_ENTITY.match(text.strip())
+                if corp_match:
+                    found.append(('manufacturer', corp_match[1].strip(' ,.-'), None, 'header_candidate'))
+            if not any(f[0] == 'serial' for f in found):
+                nr_match = GERMAN_NR_SERIAL.match(text.strip())
+                if nr_match:
+                    found.append(('serial', nr_match[1].strip(), None, 'explicit_label'))
             if index < 2:
                 possible = [word for word in line.words if re.fullmatch('[A-Z]{4,24}',word.text)
                             and word.text not in header_stop and word.confidence >= .65]
@@ -168,6 +181,74 @@ def extract_fields(attempts, manufacturers):
                     unit=unit, raw_text=line.text, attempt_id=attempt.id, region_index=attempt.region_index,
                     line_index=index, box=_value_box(line,value), ocr_confidence=confidence, basis=basis,
                     status='observed' if confidence >= .75 else 'low_confidence'))
+        # Spatially aligned two-cell tabular pairs (unique vertical unit->number or horizontal label->value).
+        for u_idx, u_line in enumerate(attempt.lines):
+            if not u_line.box:
+                continue
+            u_text = unicodedata.normalize('NFKC', u_line.text).strip()
+            for field, unit_pattern in UNITS.items():
+                if not re.fullmatch(unit_pattern, u_text, re.I):
+                    continue
+                ux1, uy1, ux2, uy2 = u_line.box
+                u_h = max(1, uy2 - uy1)
+                uc_y = (uy1 + uy2) / 2
+                matches = []
+                for v_idx, v_line in enumerate(attempt.lines):
+                    if v_idx == u_idx or not v_line.box:
+                        continue
+                    v_text = unicodedata.normalize('NFKC', v_line.text).strip()
+                    if not re.fullmatch(NUMBER, v_text):
+                        continue
+                    vx1, vy1, vx2, vy2 = v_line.box
+                    inter_x = max(0, min(ux2, vx2) - max(ux1, vx1))
+                    min_w = max(1, min(ux2 - ux1, vx2 - vx1))
+                    vc_y = (vy1 + vy2) / 2
+                    if inter_x / min_w >= 0.65 and 0 < (vc_y - uc_y) <= 2.5 * u_h and vy1 >= uy1:
+                        matches.append((v_idx, v_line, v_text))
+                if len(matches) == 1:
+                    v_idx, v_line, v_text = matches[0]
+                    vx1, vy1, vx2, vy2 = v_line.box
+                    conf = min(u_line.confidence, v_line.confidence)
+                    proposals.append(EquipmentField(
+                        id=f'field-{len(proposals)+1}', field=field, value=v_text.replace(',', '.'),
+                        unit=u_text, raw_text=f'{v_line.text} {u_line.text}', attempt_id=attempt.id,
+                        region_index=attempt.region_index, line_index=v_idx,
+                        box=(min(ux1, vx1), min(uy1, vy1), max(ux2, vx2), max(uy2, vy2)),
+                        ocr_confidence=conf, basis='unit_pattern',
+                        status='observed' if conf >= .75 else 'low_confidence',
+                    ))
+        for l_idx, l_line in enumerate(attempt.lines):
+            if not l_line.box:
+                continue
+            l_text = unicodedata.normalize('NFKC', l_line.text).strip()
+            for field, label in LABELS.items():
+                if not re.search(rf'(?<!\w){label}\s*[:#=-]?\s*$', l_text, re.I):
+                    continue
+                lx1, ly1, lx2, ly2 = l_line.box
+                l_h = max(1, ly2 - ly1)
+                matches = []
+                for v_idx, v_line in enumerate(attempt.lines):
+                    if v_idx == l_idx or not v_line.box:
+                        continue
+                    v_text = unicodedata.normalize('NFKC', v_line.text).strip()
+                    if not re.fullmatch(r'[A-Z0-9][A-Z0-9._/-]{1,39}', v_text, re.I) or v_text.upper() in STOP_IDENTIFIER_VALUES:
+                        continue
+                    vx1, vy1, vx2, vy2 = v_line.box
+                    inter_y = max(0, min(ly2, vy2) - max(ly1, vy1))
+                    min_h = max(1, min(ly2 - ly1, vy2 - vy1))
+                    dx = vx1 - lx2
+                    if inter_y / min_h >= 0.5 and -0.5 * l_h <= dx <= 2.5 * l_h and vx1 > lx1:
+                        matches.append((v_idx, v_line, v_text))
+                if len(matches) == 1:
+                    v_idx, v_line, v_text = matches[0]
+                    conf = min(l_line.confidence, v_line.confidence)
+                    proposals.append(EquipmentField(
+                        id=f'field-{len(proposals)+1}', field=field, value=v_text,
+                        unit=None, raw_text=f'{l_line.text} {v_line.text}', attempt_id=attempt.id,
+                        region_index=attempt.region_index, line_index=v_idx,
+                        box=v_line.box, ocr_confidence=conf, basis='explicit_label',
+                        status='observed' if conf >= .75 else 'low_confidence',
+                    ))
     # Repeated readings are corroboration, not independent measurements of accuracy.
     groups = {}
     for p in proposals:
