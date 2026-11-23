@@ -15,7 +15,7 @@ from starlette.concurrency import run_in_threadpool
 
 from posify.audit import record_event, timestamp
 from posify.catalog import CatalogDocument, model_record
-from posify.pdf_extract import MAX_BYTES
+from posify.pdf_extract import MAX_BYTES, ocr_empty_pages
 from posify.schemas import StrictModel
 
 
@@ -26,7 +26,7 @@ class PDFImport(StrictModel):
     empty_pages: list[int]
 
 
-def parse_pdf(raw):
+def parse_pdf(raw, ocr=None):
     if not raw.startswith(b'%PDF-'):
         raise HTTPException(422, 'Not a PDF document')
     try:
@@ -39,6 +39,8 @@ def parse_pdf(raw):
         raise HTTPException(422, 'PDF extraction exceeded its time limit')
     except (OSError, ValueError):
         raise HTTPException(503, 'PDF extraction subprocess unavailable')
+    if data.get('error') == 'pdf_has_no_text' or data.get('empty_pages'):
+        data = ocr_empty_pages(raw, data, ocr)
     if 'error' in data:
         code = data['error']
         raise HTTPException(503 if code == 'resource_limits_unavailable' else
@@ -70,7 +72,7 @@ def install_document_routes(app, database, auth, root):
     def import_document(model_id, raw, title, revision, source_ref):
         with database.connect() as db:
             model_record(db, model_id)
-        parsed = parse_pdf(raw)
+        parsed = parse_pdf(raw, getattr(app.state, 'ocr', None))
         digest = hashlib.sha256(raw).hexdigest()
         store_original(root, digest, raw)
         data = dict(id=str(uuid4()), catalog_model_id=str(model_id), title=title, revision=revision,

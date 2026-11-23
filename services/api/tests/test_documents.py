@@ -83,3 +83,27 @@ def test_pdf_stream_byte_limit_and_media_type(client):
     assert import_pdf(client, model['id'], b'%PDF-' + b'x' * (8 * 1024 * 1024)).status_code == 413
     assert client.post(f"/v1/catalog/models/{model['id']}/pdf", params={'title': 'M', 'revision': 1, 'source_ref': 'R'},
                        headers={'Content-Type': 'text/plain'}, content=b'hello').status_code == 415
+
+
+def test_scanned_image_pdf_recovers_page_text_via_configured_ocr():
+    from PIL import Image
+    from posify.ocr import OCRLine
+    from posify.pdf_extract import extract, ocr_empty_pages
+    buf = io.BytesIO()
+    Image.new('RGB', (320, 120), 'white').save(buf, format='PDF')
+    raw = buf.getvalue()
+    initial = extract(raw)
+    assert initial == {'error': 'pdf_has_no_text'}
+
+    class DisabledOCR:
+        def readiness(self): return {'configured': False}
+    assert ocr_empty_pages(raw, initial, DisabledOCR()) == {'error': 'pdf_has_no_text'}
+
+    class ConfiguredOCR:
+        def readiness(self): return {'configured': True}
+        def recognize(self, image_path):
+            return [OCRLine(text='Impeller clearance 0.25 mm', confidence=0.98)]
+    recovered = ocr_empty_pages(raw, initial, ConfiguredOCR())
+    assert recovered['page_count'] == 1
+    assert recovered['empty_pages'] == []
+    assert recovered['pages'] == [{'page_number': 1, 'source_text': 'Impeller clearance 0.25 mm'}]
