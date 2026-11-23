@@ -275,7 +275,7 @@ export default function App() {
             ) : page === "assets" ? (
               <Assets assetId={route[1]} />
             ) : page === "knowledge" ? (
-              <Knowledge />
+              <Knowledge assetId={route[1]} />
             ) : page === "inspections" ? (
               <Inspections inspectionId={route[1]} />
             ) : page === "overview" ? (

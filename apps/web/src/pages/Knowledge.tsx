@@ -1,5 +1,5 @@
 import { BookOpen, FileText, Plus } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { json, readable, segment } from "../api";
 import {
   Badge,
@@ -17,9 +17,12 @@ import { useLoad } from "../hooks";
 import type { Answer, Asset, Procedure } from "../types";
 
 import { Input, MutationForm, text } from "../components/forms";
-export function Knowledge() {
+export function Knowledge({ assetId }: { assetId?: string }) {
   const { api, site, session, role, notify } = useWorkspace();
-  const [asset, setAsset] = useState("");
+  const [asset, setAsset] = useState(assetId || "");
+  useEffect(() => {
+    if (assetId) setAsset(assetId);
+  }, [assetId]);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<Answer>();
   const [busy, setBusy] = useState(false);
@@ -37,6 +40,7 @@ export function Knowledge() {
       }),
     [site],
   );
+  const selectedAsset = assets.data?.find((a) => a.id === asset);
   async function ask(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -121,28 +125,40 @@ export function Knowledge() {
           ) : procedures.error ? (
             <ErrorPanel message={procedures.error} retry={procedures.reload} />
           ) : procedures.data?.length ? (
-            procedures.data.map((p) => (
-              <details className="procedure-row" key={p.id}>
-                <summary>
-                  <span className="document-icon">
-                    <FileText size={19} />
-                  </span>
-                  <span>
-                    <b>{p.title}</b>
-                    <small>
-                      {p.manufacturer} · {p.model}
-                    </small>
-                  </span>
-                  <Badge tone="neutral">v{p.version}</Badge>
-                </summary>
-                <p className="source-text">{p.source_text}</p>
-                <ol>
-                  {p.steps.map((s) => (
-                    <li key={s.id}>{s.instruction}</li>
-                  ))}
-                </ol>
-              </details>
-            ))
+            procedures.data.map((p) => {
+              const applicable =
+                !!selectedAsset &&
+                p.manufacturer.toLowerCase() ===
+                  selectedAsset.manufacturer.toLowerCase() &&
+                p.model.toLowerCase() === selectedAsset.model.toLowerCase();
+              return (
+                <details
+                  className="procedure-row"
+                  key={p.id}
+                  open={applicable || undefined}
+                >
+                  <summary>
+                    <span className="document-icon">
+                      <FileText size={19} />
+                    </span>
+                    <span>
+                      <b>{p.title}</b>
+                      <small>
+                        {p.manufacturer} · {p.model}
+                      </small>
+                    </span>
+                    {applicable && <Badge tone="green">Applicable</Badge>}
+                    <Badge tone="neutral">v{p.version}</Badge>
+                  </summary>
+                  <p className="source-text">{p.source_text}</p>
+                  <ol>
+                    {p.steps.map((s) => (
+                      <li key={s.id}>{s.instruction}</li>
+                    ))}
+                  </ol>
+                </details>
+              );
+            })
           ) : (
             <Empty title="No procedures yet">
               A factory manager can add versioned procedures.

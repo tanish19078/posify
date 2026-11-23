@@ -324,6 +324,18 @@ function AssetDetail({
           catalogue match.
         </p>
       )}
+      <div className="form-actions">
+        <a
+          className="button secondary"
+          href={`#/knowledge/${asset.id}`}
+          onClick={close}
+        >
+          Procedures & manuals
+        </a>
+        <a className="button secondary" href="#/inspections" onClick={close}>
+          Inspections
+        </a>
+      </div>
     </Modal>
   );
 }

@@ -746,9 +746,17 @@ function Review({ id }: { id: string }) {
                 now be attached to inspections for this asset.
               </p>
             </div>
-            <a className="button secondary" href="#/inspections">
-              Continue to inspections <ArrowRight size={16} />
-            </a>
+            <div className="form-actions">
+              <a
+                className="button secondary"
+                href={`#/knowledge/${assignment.data.asset_id}`}
+              >
+                Maintenance sources
+              </a>
+              <a className="button secondary" href="#/inspections">
+                Continue to inspections <ArrowRight size={16} />
+              </a>
+            </div>
           </div>
         ) : (
           <div className="confirmation-body">
