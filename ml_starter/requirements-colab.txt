@@ -1,0 +1,6 @@
+# Keep Colab's preinstalled CUDA-enabled torch/torchvision.
+ultralytics==8.3.221
+onnx>=1.18.0
+onnxruntime>=1.31.1,<2
+PyYAML>=6.0,<7
+Pillow>=10,<13

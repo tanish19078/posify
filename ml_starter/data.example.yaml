@@ -1,0 +1,11 @@
+# Replace with the location of your downloaded/annotated YOLO dataset,
+# or generate this automatically with prepare_multiclass.py.
+path: /content/dataset
+train: train/images
+val: valid/images
+test: test/images
+names:
+  0: nameplate
+  1: pump
+  2: valve
+  3: motor

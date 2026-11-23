@@ -1,0 +1,4 @@
+image,group_id
+train/images/pump_a_01.jpg,physical_pump_a
+valid/images/pump_b_01.jpg,physical_pump_b
+test/images/pump_c_01.jpg,physical_pump_c
