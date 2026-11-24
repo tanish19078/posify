@@ -24,6 +24,7 @@ import { Activity } from "./pages/Activity";
 import { Assets } from "./pages/Assets";
 import Captures from "./pages/Captures";
 import { Catalogue } from "./pages/Catalogue";
+import { Corrections } from "./pages/Corrections";
 import { Inspections } from "./pages/Inspections";
 import { Knowledge } from "./pages/Knowledge";
 import { Overview } from "./pages/Overview";
@@ -278,6 +279,8 @@ export default function App() {
               <Knowledge assetId={route[1]} />
             ) : page === "inspections" ? (
               <Inspections inspectionId={route[1]} />
+            ) : page === "corrections" ? (
+              <Corrections />
             ) : page === "overview" ? (
               <Overview />
             ) : page === "activity" ? (

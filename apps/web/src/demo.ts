@@ -206,6 +206,8 @@ export async function demoRequest<T>(
     };
   else if (path.startsWith("/v1/inspections"))
     value = empty ? [] : [inspection];
+  else if (path.includes("/corrections"))
+    value = [];
   else if (path.includes("/audit"))
     value = [
       {

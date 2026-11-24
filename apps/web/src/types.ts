@@ -11,6 +11,7 @@ export type Procedure = S["Procedure"];
 export type Inspection = S["Inspection"];
 export type InspectionDetail = S["InspectionDetail"];
 export type Answer = S["AssistantResponse"];
+export type Correction = S["Correction"];
 export type Factory = S["Factory"];
 export interface Principal {
   id: string | null;

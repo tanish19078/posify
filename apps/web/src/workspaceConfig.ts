@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Library,
   ScanLine,
+  ShieldAlert,
 } from "lucide-react";
 
 export const workspaceConfig = {
@@ -20,6 +21,7 @@ export const workspaceConfig = {
         { id: "overview", label: "Overview", icon: LayoutDashboard },
         { id: "assets", label: "Factory assets", icon: Boxes },
         { id: "inspections", label: "Inspections", icon: ClipboardCheck },
+        { id: "corrections", label: "Corrections", icon: ShieldAlert },
       ],
     },
     {
