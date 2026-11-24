@@ -18,6 +18,7 @@ from posify.capture_routes import install_capture_routes
 from posify.captures import capture_row
 from posify.ocr import LocalOCR
 from posify.detector import LocalDetector
+from posify.visual_similarity import LocalVisionEmbedder
 from posify.catalog import install_catalog_routes, require_factory
 from posify.jobs import install_job_routes
 from posify.retrieval import HybridRetriever
@@ -75,6 +76,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
     install_job_routes(app, database, auth)
     app.state.ocr = LocalOCR()
     app.state.detector = LocalDetector()
+    app.state.vision_embedder = LocalVisionEmbedder()
     app.state.retriever = HybridRetriever(database=database)
     document_root = Path(os.getenv("POSIFY_DOCUMENT_DIR", str(Path(database.path).parent / "documents")))
     app.state.document_root = document_root
@@ -124,6 +126,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
             "assistant": {"runtime": "ollama", "configured": bool(app.state.model_name),
                           "model": app.state.model_name or None, "inference_verified": False},
             "detector": app.state.detector.readiness(),
+            "vision_embedder": app.state.vision_embedder.readiness(),
             "database": {"dialect": database.dialect},
             "authentication": {"mode": mode, "bootstrap_enabled": mode == "development"},
         }
