@@ -20,7 +20,7 @@ from posify.ocr import LocalOCR
 from posify.detector import LocalDetector
 from posify.visual_similarity import LocalVisionEmbedder
 from posify.catalog import install_catalog_routes, require_factory
-from posify.jobs import install_job_routes
+from posify.jobs import active_workers, install_job_routes
 from posify.retrieval import HybridRetriever
 from starlette.concurrency import run_in_threadpool
 from posify.schemas import (
@@ -120,6 +120,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
 
     @app.get("/v1/runtime", dependencies=auth)
     def runtime_status():
+        workers = active_workers(database)
         return {
             "ocr": app.state.ocr.readiness(),
             "retrieval": app.state.retriever.readiness(),
@@ -127,6 +128,7 @@ def create_app(db_path=None, api_token=None, database_url=None):
                           "model": app.state.model_name or None, "inference_verified": False},
             "detector": app.state.detector.readiness(),
             "vision_embedder": app.state.vision_embedder.readiness(),
+            "workers": {"active_count": len(workers), "active": workers},
             "database": {"dialect": database.dialect},
             "authentication": {"mode": mode, "bootstrap_enabled": mode == "development"},
         }
@@ -139,7 +141,8 @@ def create_app(db_path=None, api_token=None, database_url=None):
             pending_reviews = db.execute("SELECT COUNT(*) AS count FROM inspections i WHERE status='submitted' AND NOT EXISTS (SELECT 1 FROM inspection_reviews r WHERE r.inspection_id=i.id)").fetchone()['count']
             pending_corrections = db.execute("SELECT COUNT(*) AS count FROM correction_requests WHERE status='pending'").fetchone()['count']
         return {'analysis_queues': queues, 'pending_reviews': pending_reviews,
-                'pending_corrections': pending_corrections, 'database': database.dialect}
+                'pending_corrections': pending_corrections, 'active_workers': active_workers(database),
+                'database': database.dialect}
 
     @app.get("/health")
     def health():

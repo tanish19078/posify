@@ -14,7 +14,7 @@ TABLES = {
     'captures', 'capture_analyses', 'capture_assignments', 'inspection_evidence',
     'catalog_models', 'asset_catalog_links', 'catalog_documents', 'analysis_jobs',
     'users', 'user_tokens', 'factory_memberships', 'inspection_reviews', 'correction_requests',
-    'document_imports', 'document_pages', 'embedding_cache',
+    'document_imports', 'document_pages', 'embedding_cache', 'worker_heartbeats',
 }
 
 

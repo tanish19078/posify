@@ -1,6 +1,7 @@
 """Database-backed queue. Claims and result publication are short transactions."""
 import json
 import os
+import socket
 from threading import Event, Thread
 import time
 from datetime import datetime, timezone
@@ -192,3 +193,33 @@ def work_once(app, lease_seconds=300):
         stopped.set()
         thread.join(timeout=1)
     return True
+
+
+def record_worker_heartbeat(database, worker_id, ocr_engine, detector_revision=None, status='idle',
+                            jobs_processed=0, hostname=None, pid=None):
+    host = hostname or socket.gethostname()
+    proc_id = os.getpid() if pid is None else pid
+    now_ts = time.time()
+    iso = timestamp()
+    with database.connect() as db:
+        db.execute(
+            'INSERT INTO worker_heartbeats '
+            '(worker_id, hostname, pid, ocr_engine, detector_revision, status, jobs_processed, last_seen_at, updated_at) '
+            'VALUES(?,?,?,?,?,?,?,?,?) '
+            'ON CONFLICT(worker_id) DO UPDATE SET '
+            'hostname=excluded.hostname, pid=excluded.pid, ocr_engine=excluded.ocr_engine, '
+            'detector_revision=excluded.detector_revision, status=excluded.status, '
+            'jobs_processed=excluded.jobs_processed, last_seen_at=excluded.last_seen_at, updated_at=excluded.updated_at',
+            (worker_id, host, proc_id, ocr_engine, detector_revision, status, jobs_processed, now_ts, iso),
+        )
+
+
+def active_workers(database, max_age_seconds=90):
+    cutoff = time.time() - max_age_seconds
+    with database.connect() as db:
+        rows = db.execute(
+            "SELECT worker_id, hostname, pid, ocr_engine, detector_revision, status, jobs_processed, last_seen_at, updated_at "
+            "FROM worker_heartbeats WHERE last_seen_at >= ? AND status != 'stopped' ORDER BY worker_id",
+            (cutoff,),
+        ).fetchall()
+    return [dict(r) for r in rows]

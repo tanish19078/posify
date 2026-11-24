@@ -226,3 +226,38 @@ def test_worker_renews_lease_while_inference_is_running(client):
             release.set()
         assert running.result(timeout=3)
     assert client.get(f"/v1/sites/plant-a/jobs/{job['id']}").json()['status'] == 'succeeded'
+
+
+def test_worker_heartbeats_upsert_filter_stale_and_appear_in_status(client):
+    from posify.jobs import active_workers, record_worker_heartbeat
+    db = client.app.state.database
+    record_worker_heartbeat(
+        db, 'worker-alpha', 'rapidocr', detector_revision='equipment-detector@v2',
+        status='idle', jobs_processed=0, hostname='host-a', pid=101,
+    )
+    record_worker_heartbeat(
+        db, 'worker-alpha', 'rapidocr', detector_revision='equipment-detector@v2',
+        status='active', jobs_processed=3, hostname='host-a', pid=101,
+    )
+    record_worker_heartbeat(
+        db, 'worker-stale', 'tesseract', status='idle', jobs_processed=1, hostname='host-b', pid=202,
+    )
+    record_worker_heartbeat(
+        db, 'worker-stopped', 'tesseract', status='stopped', jobs_processed=2, hostname='host-c', pid=303,
+    )
+    with db.connect() as conn:
+        conn.execute('UPDATE worker_heartbeats SET last_seen_at=? WHERE worker_id=?', (time.time() - 300, 'worker-stale'))
+
+    workers = active_workers(db, max_age_seconds=90)
+    assert len(workers) == 1
+    assert workers[0]['worker_id'] == 'worker-alpha'
+    assert workers[0]['jobs_processed'] == 3
+    assert workers[0]['detector_revision'] == 'equipment-detector@v2'
+
+    runtime = client.get('/v1/runtime').json()
+    assert runtime['workers']['active_count'] == 1
+    assert runtime['workers']['active'][0]['worker_id'] == 'worker-alpha'
+
+    ops = client.get('/v1/operations').json()
+    assert len(ops['active_workers']) == 1
+    assert ops['active_workers'][0]['worker_id'] == 'worker-alpha'
